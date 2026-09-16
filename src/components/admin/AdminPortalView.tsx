@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAdminPortal, AdminTab } from '@/context/AdminPortalContext';
 import { STORE_NAME } from '@/data/config';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured, diagnoseAuthError } from '@/lib/supabase/client';
 import DashboardTab from '@/components/admin/tabs/DashboardTab';
 import ProductsTab from '@/components/admin/tabs/ProductsTab';
 import ServicesTab from '@/components/admin/tabs/ServicesTab';
@@ -44,7 +44,7 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
     activeTab, 
     setActiveTab, 
     logout,
-    checkAdminRole
+    verifyAdminRole
   } = useAdminPortal();
 
   // Login form state
@@ -69,33 +69,34 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
     setLoginError(null);
     setLoginLoading(true);
 
+    // 1. Diagnostic check: Supabase URL/key configuration
+    if (!isSupabaseConfigured()) {
+      setLoginError('Konfigurasi Supabase tidak tersedia: NEXT_PUBLIC_SUPABASE_URL atau API Key belum disetel.');
+      setLoginLoading(false);
+      return;
+    }
+
     try {
+      // 2. Normal Supabase Auth sign-in
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
       if (error) {
-        const msg = error.message.toLowerCase();
-        if (msg.includes('invalid login credentials') || msg.includes('invalid_grant')) {
-          setLoginError('Email atau password salah. Pastikan akun admin Anda sudah benar.');
-        } else if (msg.includes('email not confirmed')) {
-          setLoginError('Email belum dikonfirmasi di Supabase. Buka Supabase Auth Settings dan matikan "Confirm email" atau konfirmasi email Anda.');
-        } else if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('name_not_resolved')) {
-          setLoginError('Gagal terhubung ke database Supabase. Periksa koneksi internet Anda.');
-        } else {
-          setLoginError(error.message || 'Gagal masuk. Periksa email dan password Anda.');
-        }
+        const diag = diagnoseAuthError(error);
+        setLoginError(diag.message);
         setLoginLoading(false);
         return;
       }
 
       if (data?.session && data?.user) {
-        const isAuthorized = await checkAdminRole(data.user.id, data.user.email);
+        // 3. Verify admin authorization role
+        const verification = await verifyAdminRole(data.user.id, data.user.email);
 
-        if (!isAuthorized) {
+        if (!verification.authorized) {
           await supabase.auth.signOut();
-          setLoginError('Akses ditolak: Akun Anda tidak terdaftar sebagai Administrator.');
+          setLoginError(verification.diagnostic?.message || 'Akses ditolak: Akun Anda tidak terdaftar sebagai Administrator.');
           setLoginLoading(false);
           return;
         }
@@ -104,12 +105,8 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
         setPassword('');
       }
     } catch (err: unknown) {
-      const errMsg = (err as Error)?.message || '';
-      if (errMsg.toLowerCase().includes('failed to fetch')) {
-        setLoginError('Gagal menghubungi server database. Periksa koneksi internet Anda.');
-      } else {
-        setLoginError(errMsg || 'Terjadi kesalahan saat otentikasi admin.');
-      }
+      const diag = diagnoseAuthError(err);
+      setLoginError(diag.message);
     } finally {
       setLoginLoading(false);
     }

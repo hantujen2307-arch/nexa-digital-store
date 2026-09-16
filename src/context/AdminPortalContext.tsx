@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured, diagnoseAuthError, AuthDiagnostic } from '@/lib/supabase/client';
 
 export type AdminTab = 'dashboard' | 'products' | 'services' | 'promos' | 'settings';
 
@@ -27,6 +27,7 @@ interface AdminPortalContextType {
   setIsCreatingProduct: (val: boolean) => void;
   logout: () => Promise<void>;
   checkAdminRole: (userId: string, userEmail?: string) => Promise<boolean>;
+  verifyAdminRole: (userId: string, userEmail?: string) => Promise<{ authorized: boolean; diagnostic?: AuthDiagnostic }>;
 }
 
 const AdminPortalContext = createContext<AdminPortalContextType | undefined>(undefined);
@@ -48,58 +49,97 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
     setDataVersion((v) => v + 1);
   }, []);
 
-  // Helper to verify admin role against admin_users table, app_metadata, or authenticated session
-  const checkAdminRole = useCallback(async (userId: string, userEmail?: string): Promise<boolean> => {
-    if (!userId) return false;
-    if (!isSupabaseConfigured()) return true; // Local development bypass
-    try {
-      // 1. Check admin_users table by id
-      const { data: adminRecordById } = await supabase
-        .from('admin_users')
-        .select('id, role, email')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (adminRecordById?.role === 'admin') {
-        return true;
+  // Diagnostic helper to verify admin role against admin_users table and app_metadata
+  const verifyAdminRole = useCallback(
+    async (userId: string, userEmail?: string): Promise<{ authorized: boolean; diagnostic?: AuthDiagnostic }> => {
+      if (!userId) {
+        return {
+          authorized: false,
+          diagnostic: {
+            type: 'UNAUTHORIZED_ADMIN',
+            title: 'Sesi Tidak Valid',
+            message: 'User ID tidak ditemukan pada sesi autentikasi.',
+          },
+        };
       }
 
-      // 2. Check admin_users table by email
-      if (userEmail) {
-        const { data: adminRecordByEmail } = await supabase
+      if (!isSupabaseConfigured()) {
+        return { authorized: true }; // Local development fallback
+      }
+
+      try {
+        // 1. Check admin_users table by ID
+        const { data: adminRecordById, error: errorById } = await supabase
           .from('admin_users')
           .select('id, role, email')
-          .eq('email', userEmail.toLowerCase())
+          .eq('id', userId)
           .maybeSingle();
 
-        if (adminRecordByEmail?.role === 'admin') {
-          return true;
+        if (errorById) {
+          const diag = diagnoseAuthError(errorById);
+          if (diag.type === 'RLS_PERMISSION' || diag.type === 'ADMIN_TABLE_ERROR' || diag.type === 'NETWORK_UNREACHABLE') {
+            console.error('Diagnostic error querying admin_users by ID:', errorById);
+            return { authorized: false, diagnostic: diag };
+          }
         }
-      }
 
-      // 3. Any user created in Supabase Authentication -> Users is an authorized admin
-      // Attempt to sync/insert into admin_users table for persistent role tracking
-      try {
-        await supabase
-          .from('admin_users')
-          .upsert(
-            {
-              id: userId,
-              email: (userEmail || '').toLowerCase(),
-              role: 'admin',
-            },
-            { onConflict: 'id' }
-          );
-      } catch {
-        // Ignore if RLS restricts client insert
-      }
+        if (adminRecordById?.role === 'admin') {
+          return { authorized: true };
+        }
 
-      return true;
-    } catch (err) {
-      console.error('Error checking admin role:', err);
-      return true; // If user is authenticated in Supabase Auth, permit access
-    }
-  }, []);
+        // 2. Check admin_users table by email
+        if (userEmail) {
+          const { data: adminRecordByEmail, error: errorByEmail } = await supabase
+            .from('admin_users')
+            .select('id, role, email')
+            .eq('email', userEmail.toLowerCase())
+            .maybeSingle();
+
+          if (errorByEmail) {
+            const diag = diagnoseAuthError(errorByEmail);
+            if (diag.type === 'RLS_PERMISSION' || diag.type === 'ADMIN_TABLE_ERROR' || diag.type === 'NETWORK_UNREACHABLE') {
+              console.error('Diagnostic error querying admin_users by email:', errorByEmail);
+              return { authorized: false, diagnostic: diag };
+            }
+          }
+
+          if (adminRecordByEmail?.role === 'admin') {
+            return { authorized: true };
+          }
+        }
+
+        // 3. Check Supabase app_metadata
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user?.app_metadata?.role === 'admin') {
+          return { authorized: true };
+        }
+
+        return {
+          authorized: false,
+          diagnostic: {
+            type: 'UNAUTHORIZED_ADMIN',
+            title: 'Akses Ditolak',
+            message: 'Akses ditolak: Akun Anda tidak terdaftar sebagai Administrator pada tabel admin_users.',
+          },
+        };
+      } catch (err) {
+        console.error('Error verifying admin role:', err);
+        return {
+          authorized: false,
+          diagnostic: diagnoseAuthError(err),
+        };
+      }
+    },
+    []
+  );
+
+  const checkAdminRole = useCallback(
+    async (userId: string, userEmail?: string): Promise<boolean> => {
+      const result = await verifyAdminRole(userId, userEmail);
+      return result.authorized;
+    },
+    [verifyAdminRole]
+  );
 
   // Initial session & listener setup
   useEffect(() => {
@@ -251,6 +291,7 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
         setIsCreatingProduct,
         logout,
         checkAdminRole,
+        verifyAdminRole,
       }}
     >
       {children}
