@@ -112,13 +112,12 @@ export default function Footer() {
               Kontak
             </a>
             <span className="text-zinc-700">|</span>
-            <button
-              type="button"
-              onClick={openLogin}
+            <Link
+              href="/admin"
               className="hover:text-cyan-400 text-zinc-500 transition-colors cursor-pointer"
             >
               🔐 Admin
-            </button>
+            </Link>
           </div>
 
           <p className="text-center md:text-right max-w-xl text-zinc-600 text-[10px]">

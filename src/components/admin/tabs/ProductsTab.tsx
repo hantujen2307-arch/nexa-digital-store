@@ -58,6 +58,7 @@ export default function ProductsTab() {
   const [formLogoUrl, setFormLogoUrl] = useState('');
   const [formBadge, setFormBadge] = useState('');
   const [formCategory, setFormCategory] = useState('Streaming');
+  const [formDownloadUrl, setFormDownloadUrl] = useState('');
   const [formActive, setFormActive] = useState(true);
   const [formUploading, setFormUploading] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -117,6 +118,7 @@ export default function ProductsTab() {
         setFormLogoUrl(prod.logo_url);
         setFormBadge(prod.badge || '');
         setFormCategory(prod.category || 'Streaming');
+        setFormDownloadUrl(prod.download_url || '');
         setFormActive(prod.active);
         setPackages(prod.packages || []);
       }
@@ -129,6 +131,7 @@ export default function ProductsTab() {
       setFormLogoUrl('');
       setFormBadge('');
       setFormCategory('Streaming');
+      setFormDownloadUrl('');
       setFormActive(true);
       setPackages([]);
     }
@@ -278,6 +281,7 @@ export default function ProductsTab() {
       logo_url: formLogoUrl.trim() || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80',
       category: formCategory.trim(),
       badge: formBadge.trim() || null,
+      download_url: formDownloadUrl.trim() || null,
       active: formActive,
       updated_at: new Date().toISOString(),
     };
@@ -670,6 +674,20 @@ export default function ProductsTab() {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Download URL / Tutorial Link */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 mb-1 uppercase tracking-wider">
+              Link Download / Panduan Akses (Opsional)
+            </label>
+            <input
+              type="url"
+              value={formDownloadUrl}
+              onChange={(e) => setFormDownloadUrl(e.target.value)}
+              placeholder="https://drive.google.com/... atau https://play.google.com/..."
+              className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500"
+            />
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-zinc-800">

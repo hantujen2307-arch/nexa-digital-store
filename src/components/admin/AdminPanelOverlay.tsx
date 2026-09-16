@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useAdminPortal, AdminTab } from '@/context/AdminPortalContext';
 import { STORE_NAME } from '@/data/config';
 import DashboardTab from '@/components/admin/tabs/DashboardTab';
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminPanelOverlay() {
+  const pathname = usePathname();
   const { 
     isAdminDashboardOpen, 
     closeDashboard, 
@@ -30,7 +32,7 @@ export default function AdminPanelOverlay() {
     logout 
   } = useAdminPortal();
 
-  if (!isAdminDashboardOpen) return null;
+  if (!isAdminDashboardOpen || pathname?.startsWith('/admin')) return null;
 
   const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },

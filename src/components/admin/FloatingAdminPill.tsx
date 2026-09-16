@@ -1,14 +1,16 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useAdminPortal } from '@/context/AdminPortalContext';
 import { ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 export default function FloatingAdminPill() {
+  const pathname = usePathname();
   const { isAdmin, isAdminDashboardOpen, openDashboard } = useAdminPortal();
 
-  // Only show when admin is logged in AND the dashboard overlay is closed
-  if (!isAdmin || isAdminDashboardOpen) return null;
+  // Only show when admin is logged in, overlay is closed, and not already on /admin page
+  if (!isAdmin || isAdminDashboardOpen || pathname?.startsWith('/admin')) return null;
 
   return (
     <div className="fixed bottom-6 left-6 z-40 animate-in fade-in slide-in-from-bottom-3 duration-300">

@@ -17,6 +17,7 @@ export interface Product {
   logo_url: string;
   category: string;
   badge: string | null;
+  download_url?: string | null;
   active: boolean;
   created_at?: string;
   updated_at?: string;

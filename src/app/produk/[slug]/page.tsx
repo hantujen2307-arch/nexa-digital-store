@@ -20,7 +20,9 @@ import {
   Loader2, 
   Tag, 
   MessageCircle,
-  HelpCircle
+  HelpCircle,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -263,6 +265,28 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Download / Panduan Akses (Jika ada) */}
+              {product.download_url && (
+                <div className="p-6 sm:p-7 rounded-2xl bg-zinc-900/40 border border-cyan-500/30">
+                  <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
+                    <Download className="w-4 h-4 text-cyan-400" />
+                    <span>Link Download & Panduan</span>
+                  </h3>
+                  <p className="text-xs text-zinc-400 mb-4">
+                    Unduh aplikasi atau akses panduan instalasi resmi melalui tautan di bawah:
+                  </p>
+                  <a
+                    href={product.download_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Buka Link Download / Panduan</span>
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Right Column: Package Selection & WhatsApp Purchase */}

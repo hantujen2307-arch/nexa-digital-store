@@ -32,7 +32,9 @@ SET search_path = public
 AS $$
 BEGIN
   RETURN EXISTS (
-    SELECT 1 FROM public.admin_users WHERE id = user_id
+    SELECT 1 FROM public.admin_users WHERE id = user_id AND role = 'admin'
+  ) OR (
+    auth.jwt() -> 'app_metadata' ->> 'role' = 'admin'
   );
 END;
 $$;
@@ -47,6 +49,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     logo_url TEXT NOT NULL,
     category TEXT NOT NULL,
     badge TEXT,
+    download_url TEXT,
     active BOOLEAN DEFAULT TRUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL

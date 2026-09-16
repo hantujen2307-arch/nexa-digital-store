@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useAdminPortal } from '@/context/AdminPortalContext';
 import { STORE_NAME } from '@/data/config';
 import { Sparkles, Lock, Mail, AlertCircle, X, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginModal() {
+  const pathname = usePathname();
   const { isAdminModalOpen, closeLogin, openDashboard, checkAdminRole } = useAdminPortal();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +16,7 @@ export default function AdminLoginModal() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (!isAdminModalOpen) return null;
+  if (!isAdminModalOpen || pathname?.startsWith('/admin')) return null;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +47,7 @@ export default function AdminLoginModal() {
 
       if (data?.session && data?.user) {
         // Verify admin authorization
-        const hasAdminRole = await checkAdminRole(data.user.id);
+        const hasAdminRole = await checkAdminRole(data.user.id, data.user.email);
         const hasAppMeta = data.user.app_metadata?.role === 'admin';
 
         if (!hasAdminRole && !hasAppMeta) {

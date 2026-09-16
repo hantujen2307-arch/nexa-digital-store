@@ -26,7 +26,7 @@ interface AdminPortalContextType {
   setEditingProductId: (id: string | null) => void;
   setIsCreatingProduct: (val: boolean) => void;
   logout: () => Promise<void>;
-  checkAdminRole: (userId: string) => Promise<boolean>;
+  checkAdminRole: (userId: string, userEmail?: string) => Promise<boolean>;
 }
 
 const AdminPortalContext = createContext<AdminPortalContextType | undefined>(undefined);
@@ -49,16 +49,32 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Helper to verify admin role against admin_users table and app_metadata
-  const checkAdminRole = useCallback(async (userId: string): Promise<boolean> => {
+  const checkAdminRole = useCallback(async (userId: string, userEmail?: string): Promise<boolean> => {
     if (!isSupabaseConfigured()) return false;
     try {
-      const { data: adminRecord } = await supabase
+      const { data: adminRecordById } = await supabase
         .from('admin_users')
-        .select('id, role')
+        .select('id, role, email')
         .eq('id', userId)
         .maybeSingle();
 
-      return adminRecord?.role === 'admin';
+      if (adminRecordById?.role === 'admin') {
+        return true;
+      }
+
+      if (userEmail) {
+        const { data: adminRecordByEmail } = await supabase
+          .from('admin_users')
+          .select('id, role, email')
+          .eq('email', userEmail.toLowerCase())
+          .maybeSingle();
+
+        if (adminRecordByEmail?.role === 'admin') {
+          return true;
+        }
+      }
+
+      return false;
     } catch (err) {
       console.error('Error checking admin role:', err);
       return false;
@@ -76,7 +92,7 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const hasAdminTableRole = await checkAdminRole(session.user.id);
+          const hasAdminTableRole = await checkAdminRole(session.user.id, session.user.email);
           const hasAppMetaRole = session.user.app_metadata?.role === 'admin';
           if (hasAdminTableRole || hasAppMetaRole) {
             setAdminUser(session.user);
@@ -104,7 +120,7 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
         setIsAdmin(false);
         setIsAdminDashboardOpen(false);
       } else if (session?.user) {
-        const hasAdminTableRole = await checkAdminRole(session.user.id);
+        const hasAdminTableRole = await checkAdminRole(session.user.id, session.user.email);
         const hasAppMetaRole = session.user.app_metadata?.role === 'admin';
         if (hasAdminTableRole || hasAppMetaRole) {
           setAdminUser(session.user);
