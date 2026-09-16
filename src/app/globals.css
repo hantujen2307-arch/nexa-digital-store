@@ -1,26 +1,982 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    background-color: #09090b;
+    color: #f4f4f5;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
+
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Glassmorphic and subtle glow classes */
+.glass-card {
+  background: rgba(18, 18, 23, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 0 20px -4px rgba(56, 189, 248, 0.15);
+}
+
+.hero-gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-gradient-text {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* =========================================================================
+   CINEMATIC 3D DIGITAL PRODUCT COMMERCIAL (±7.0s LUXURY TIMELINE)
+   Scene 1: 0.0s - 1.5s : Curved Iris Curtain Closed (dark, center seam glow)
+   Scene 2: 1.5s - 2.3s : Curtain Opens Slowly (curved panels slide away with parallax)
+   Scene 3: 2.0s - 3.2s : Digital World Reveal & Slow Floating Cards Entry
+   Scene 4: 3.0s - 4.3s : Slow Weightless 3D Float & Tilt (scale surge, specular sheen)
+   Scene 5: 4.0s - 5.0s : Slow Product Orbit (cards orbit & disperse to frame center)
+   Scene 6: 4.8s - 5.7s : Hero Logo Reveal (scale 0.75 -> 1.0, blur -> sharp, hero focus)
+   Scene 7: 5.5s - 6.2s : Glossy Light Sweep across entire composition
+   Scene 8: 5.8s - 6.5s : Brand Name & Tagline Reveal
+   Scene 9: 6.3s - 7.0s : Cinematic Dissolve & Seamless Homepage Transition
+   ========================================================================= */
+
+/* Perspective 3D Stage */
+.perspective-stage {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* =========================================================================
+   OPENING CURTAIN / IRIS KEYFRAMES (0.0s - 2.5s)
+   ========================================================================= */
+
+/* Left Curved Panel */
+@keyframes introCurtainLeftKeyframes {
+  0%, 21.4% { /* 0.0s - 1.5s: Fully Closed at Center */
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  35.7% { /* 2.5s: Initial opening - frames left edge as sleek dark vignette */
+    transform: translateX(-74%) rotate(-3deg);
+    opacity: 0.85;
+  }
+  85.7% { /* 6.0s: Holds framing position while cards & logo are displayed */
+    transform: translateX(-78%) rotate(-3deg);
+    opacity: 0.80;
+  }
+  90.0% { /* 6.3s: "Curtain mulai membuka lebih jauh" - slow, stately glide */
+    transform: translateX(-88%) rotate(-4deg);
+    opacity: 0.65;
+  }
+  94.3% { /* 6.6s */
+    transform: translateX(-108%) rotate(-5deg);
+    opacity: 0.40;
+  }
+  97.1% { /* 6.8s */
+    transform: translateX(-130%) rotate(-6deg);
+    opacity: 0.12;
+  }
+  100% { /* 7.0s: Completely cleared off-screen into the wings */
+    transform: translateX(-150%) rotate(-7deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* Right Curved Panel */
+@keyframes introCurtainRightKeyframes {
+  0%, 21.4% { /* 0.0s - 1.5s: Fully Closed at Center */
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  35.7% { /* 2.5s: Initial opening - frames right edge as sleek dark vignette */
+    transform: translateX(74%) rotate(3deg);
+    opacity: 0.85;
+  }
+  85.7% { /* 6.0s: Holds framing position while cards & logo are displayed */
+    transform: translateX(78%) rotate(3deg);
+    opacity: 0.80;
+  }
+  90.0% { /* 6.3s: "Curtain mulai membuka lebih jauh" - slow, stately glide */
+    transform: translateX(88%) rotate(4deg);
+    opacity: 0.65;
+  }
+  94.3% { /* 6.6s */
+    transform: translateX(108%) rotate(5deg);
+    opacity: 0.40;
+  }
+  97.1% { /* 6.8s */
+    transform: translateX(130%) rotate(6deg);
+    opacity: 0.12;
+  }
+  100% { /* 7.0s: Completely cleared off-screen into the wings */
+    transform: translateX(150%) rotate(7deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* Center Seam Slit Glow */
+@keyframes introCurtainSeamKeyframes {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(0.7);
+  }
+  7% { /* ~0.5s */
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scaleY(1);
+  }
+  21% { /* 1.5s: Flare as curtain parts */
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.8);
+    filter: drop-shadow(0 0 30px #38bdf8);
+  }
+  31% { /* ~2.2s: Dissolves cleanly into digital world */
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(3);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Root Overlay Container - Smooth Cross-fade 6.0s to 7.0s */
+@keyframes introCommercialOverlay {
+  0%, 85.7% { /* 0.0s - 6.0s */
+    opacity: 1;
+    visibility: visible;
+  }
+  88.6% { /* 6.2s */
+    opacity: 0.92;
+  }
+  91.4% { /* 6.4s */
+    opacity: 0.72;
+  }
+  92.9% { /* 6.5s - Light sweep crossing center (The Optical Bridge) */
+    opacity: 0.48;
+  }
+  95.7% { /* 6.7s */
+    opacity: 0.16;
+  }
+  98.5% { /* 6.9s */
+    opacity: 0.02;
+  }
+  100% { /* 7.0s */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* Digital Grid Background Pulse */
+@keyframes introCyberGrid {
+  0%, 20% {
+    opacity: 0;
+    transform: perspective(600px) rotateX(60deg) translateY(0) scale(0.9);
+  }
+  32% {
+    opacity: 0.35;
+    transform: perspective(600px) rotateX(60deg) translateY(15px) scale(1);
+  }
+  85.7% { /* 6.0s */
+    opacity: 0.3;
+    transform: perspective(600px) rotateX(60deg) translateY(40px) scale(1.08);
+  }
+  95.7% { /* 6.7s */
+    opacity: 0.05;
+    transform: perspective(600px) rotateX(60deg) translateY(55px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(600px) rotateX(60deg) translateY(60px) scale(1.2);
+  }
+}
+
+/* Glowing Digital Concentric Ring */
+@keyframes introDigitalRing {
+  0%, 20% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+  }
+  30% { /* ~2.1s */
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0.85) rotate(40deg);
+  }
+  57% { /* 4.0s */
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.15) rotate(130deg);
+  }
+  75% { /* 5.2s */
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1.35) rotate(190deg);
+  }
+  85.7% { /* 6.0s */
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1.45) rotate(230deg);
+  }
+  95.7% { /* 6.7s */
+    opacity: 0.08;
+    transform: translate(-50%, -50%) scale(1.6) rotate(280deg);
+  }
+  100% { /* 7.0s */
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.7) rotate(300deg);
+  }
+}
+
+/* Ambient Center Glow */
+@keyframes introAmbientBloom {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  25% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  75% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  85.7% { /* 6.0s */
+    opacity: 0.65;
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+  95.7% { /* 6.7s */
+    opacity: 0.1;
+    transform: translate(-50%, -50%) scale(1.35);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+/* =========================================================================
+   3D FLOATING PRODUCT CARDS CHOREOGRAPHY (Detik 6.0 - 7.0 Drift Away)
+   ========================================================================= */
+
+/* CARD 1: Left Wing (Streaming / Entertainment) */
+@keyframes introCard1Keyframes {
+  0%, 28% { /* 0.0s - 2.0s: Behind Curtain */
+    opacity: 0;
+    transform: translate3d(-380px, -40px, -180px) rotateY(45deg) rotateZ(-15deg) scale(0.7);
+  }
+  45% { /* 3.15s - Slow Entry */
+    opacity: 1;
+    transform: translate3d(-150px, -30px, 30px) rotateY(16deg) rotateZ(-5deg) scale(1);
+  }
+  60% { /* 4.2s - Slow 3D Float & Tilt */
+    opacity: 1;
+    transform: translate3d(-130px, -50px, 70px) rotateY(-8deg) rotateX(12deg) scale(1.1);
+  }
+  71% { /* 5.0s - Orbit Outward to Frame Center */
+    opacity: 0.85;
+    transform: translate3d(-250px, -90px, -30px) rotateY(22deg) rotateZ(-10deg) scale(0.82);
+    filter: blur(0px);
+  }
+  85.7% { /* 6.0s - Transition starts */
+    opacity: 0.80;
+    transform: translate3d(-280px, -110px, -45px) rotateY(26deg) rotateZ(-8deg) scale(0.78);
+    filter: blur(0px);
+  }
+  88.6% { /* 6.2s - "Floating objects mulai menjauh" */
+    opacity: 0.65;
+    transform: translate3d(-340px, -135px, -90px) rotateY(32deg) scale(0.70);
+    filter: blur(1px);
+  }
+  92.9% { /* 6.5s - Light sweep crossing center */
+    opacity: 0.32;
+    transform: translate3d(-420px, -170px, -160px) rotateY(38deg) scale(0.58);
+    filter: blur(3px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.04;
+    transform: translate3d(-490px, -210px, -230px) scale(0.46);
+    filter: blur(6px);
+  }
+  100% { /* 7.0s - Dissolved */
+    opacity: 0;
+    transform: translate3d(-530px, -230px, -280px) scale(0.40);
+    filter: blur(8px);
+  }
+}
+
+/* CARD 2: Right Wing (AI Intelligence) */
+@keyframes introCard2Keyframes {
+  0%, 28% { /* 0.0s - 2.0s: Behind Curtain */
+    opacity: 0;
+    transform: translate3d(380px, -40px, -180px) rotateY(-45deg) rotateZ(15deg) scale(0.7);
+  }
+  45% { /* 3.15s - Slow Entry */
+    opacity: 1;
+    transform: translate3d(150px, -30px, 30px) rotateY(-16deg) rotateZ(5deg) scale(1);
+  }
+  60% { /* 4.2s - Slow 3D Float & Tilt */
+    opacity: 1;
+    transform: translate3d(130px, -20px, 80px) rotateY(12deg) rotateX(-10deg) scale(1.12);
+  }
+  71% { /* 5.0s - Orbit Outward to Frame Center */
+    opacity: 0.85;
+    transform: translate3d(250px, -90px, -30px) rotateY(-22deg) rotateZ(10deg) scale(0.82);
+    filter: blur(0px);
+  }
+  85.7% { /* 6.0s - Transition starts */
+    opacity: 0.80;
+    transform: translate3d(280px, -110px, -45px) rotateY(-26deg) rotateZ(8deg) scale(0.78);
+    filter: blur(0px);
+  }
+  88.6% { /* 6.2s - "Floating objects mulai menjauh" */
+    opacity: 0.65;
+    transform: translate3d(340px, -135px, -90px) rotateY(-32deg) scale(0.70);
+    filter: blur(1px);
+  }
+  92.9% { /* 6.5s - Light sweep crossing center */
+    opacity: 0.32;
+    transform: translate3d(420px, -170px, -160px) rotateY(-38deg) scale(0.58);
+    filter: blur(3px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.04;
+    transform: translate3d(490px, -210px, -230px) scale(0.46);
+    filter: blur(6px);
+  }
+  100% { /* 7.0s - Dissolved */
+    opacity: 0;
+    transform: translate3d(530px, -230px, -280px) scale(0.40);
+    filter: blur(8px);
+  }
+}
+
+/* CARD 3: Center-Bottom (Creative & Video) */
+@keyframes introCard3Keyframes {
+  0%, 28% { /* 0.0s - 2.0s: Behind Curtain */
+    opacity: 0;
+    transform: translate3d(0px, 140px, -300px) scale(0.4) rotateX(30deg);
+  }
+  45% { /* 3.15s - Slow Entry */
+    opacity: 1;
+    transform: translate3d(0px, 50px, 100px) scale(1.05) rotateX(0deg);
+  }
+  60% { /* 4.2s - Slow Float */
+    opacity: 1;
+    transform: translate3d(0px, 35px, 130px) scale(1.14) rotateY(8deg) rotateX(-8deg);
+  }
+  71% { /* 5.0s - Orbit Down to Frame Center */
+    opacity: 0.85;
+    transform: translate3d(0px, 150px, -20px) scale(0.84) rotateX(12deg);
+    filter: blur(0px);
+  }
+  85.7% { /* 6.0s - Transition starts */
+    opacity: 0.80;
+    transform: translate3d(0px, 175px, -35px) scale(0.80) rotateX(12deg);
+    filter: blur(0px);
+  }
+  88.6% { /* 6.2s - Drift deeper & down */
+    opacity: 0.65;
+    transform: translate3d(0px, 225px, -80px) scale(0.70) rotateX(16deg);
+    filter: blur(1px);
+  }
+  92.9% { /* 6.5s - Light sweep bridge */
+    opacity: 0.32;
+    transform: translate3d(0px, 290px, -150px) scale(0.58) rotateX(20deg);
+    filter: blur(3px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.04;
+    transform: translate3d(0px, 350px, -220px) scale(0.46);
+    filter: blur(6px);
+  }
+  100% { /* 7.0s - Dissolved */
+    opacity: 0;
+    transform: translate3d(0px, 390px, -270px) scale(0.40);
+    filter: blur(8px);
+  }
+}
+
+/* CARD 4: Top-Left (Productivity & Tools) */
+@keyframes introCard4Keyframes {
+  0%, 30% { /* 0.0s - 2.1s */
+    opacity: 0;
+    transform: translate3d(-200px, -260px, -100px) rotateX(-40deg) rotateZ(-12deg) scale(0.6);
+  }
+  47% { /* 3.3s */
+    opacity: 1;
+    transform: translate3d(-170px, -80px, 0px) rotateX(-10deg) rotateZ(-4deg) scale(0.95);
+  }
+  60% { /* 4.2s */
+    opacity: 1;
+    transform: translate3d(-190px, -60px, 35px) rotateY(-14deg) rotateZ(6deg) scale(1.04);
+  }
+  71% { /* 5.0s */
+    opacity: 0.75;
+    transform: translate3d(-260px, 30px, -40px) rotateY(25deg) scale(0.8);
+    filter: blur(0px);
+  }
+  85.7% { /* 6.0s */
+    opacity: 0.65;
+    transform: translate3d(-300px, 45px, -60px) scale(0.74);
+    filter: blur(0px);
+  }
+  88.6% { /* 6.2s - Move away */
+    opacity: 0.50;
+    transform: translate3d(-350px, 65px, -100px) scale(0.64);
+    filter: blur(1px);
+  }
+  92.9% { /* 6.5s */
+    opacity: 0.25;
+    transform: translate3d(-420px, 90px, -160px) scale(0.52);
+    filter: blur(3px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.03;
+    transform: translate3d(-480px, 110px, -220px) scale(0.42);
+    filter: blur(6px);
+  }
+  100% { /* 7.0s */
+    opacity: 0;
+    transform: translate3d(-520px, 120px, -260px) scale(0.36);
+    filter: blur(8px);
+  }
+}
+
+/* CARD 5: Bottom-Right (Cinema & Promo) */
+@keyframes introCard5Keyframes {
+  0%, 30% { /* 0.0s - 2.1s */
+    opacity: 0;
+    transform: translate3d(200px, 260px, -100px) rotateX(40deg) rotateZ(12deg) scale(0.6);
+  }
+  47% { /* 3.3s */
+    opacity: 1;
+    transform: translate3d(170px, 80px, 0px) rotateX(10deg) rotateZ(4deg) scale(0.95);
+  }
+  60% { /* 4.2s */
+    opacity: 1;
+    transform: translate3d(190px, 60px, 35px) rotateY(14deg) rotateZ(-6deg) scale(1.04);
+  }
+  71% { /* 5.0s */
+    opacity: 0.75;
+    transform: translate3d(260px, 30px, -40px) rotateY(-25deg) scale(0.8);
+    filter: blur(0px);
+  }
+  85.7% { /* 6.0s */
+    opacity: 0.65;
+    transform: translate3d(300px, 45px, -60px) scale(0.74);
+    filter: blur(0px);
+  }
+  88.6% { /* 6.2s - Move away */
+    opacity: 0.50;
+    transform: translate3d(350px, 65px, -100px) scale(0.64);
+    filter: blur(1px);
+  }
+  92.9% { /* 6.5s */
+    opacity: 0.25;
+    transform: translate3d(420px, 90px, -160px) scale(0.52);
+    filter: blur(3px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.03;
+    transform: translate3d(480px, 110px, -220px) scale(0.42);
+    filter: blur(6px);
+  }
+  100% { /* 7.0s */
+    opacity: 0;
+    transform: translate3d(520px, 120px, -260px) scale(0.36);
+    filter: blur(8px);
+  }
+}
+
+/* Card Glossy Reflection Sheen */
+@keyframes introCardGlossSheen {
+  0%, 35% {
+    transform: translateX(-160%) skewX(-20deg);
+    opacity: 0;
+  }
+  38% {
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateX(240%) skewX(-20deg);
+    opacity: 0;
+  }
+  78% {
+    transform: translateX(-160%) skewX(-20deg);
+    opacity: 0;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  88% {
+    transform: translateX(240%) skewX(-20deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(240%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+/* =========================================================================
+   CAMERA PULLBACK ON 3D STAGE (6.0s - 7.0s Cinematic Zoom Out)
+   Intro elements: scale(1) -> scale(0.97)
+   ========================================================================= */
+
+@keyframes introStageCameraPullback {
+  0%, 85.7% { /* 0.0s - 6.0s: Normal Stage Framing */
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  88.6% { /* 6.2s: Subtle pull begins */
+    transform: scale(0.992) translate3d(0, -2px, -15px);
+  }
+  91.4% { /* 6.4s: Camera pulling back smoothly */
+    transform: scale(0.982) translate3d(0, -6px, -35px);
+  }
+  94.3% { /* 6.6s: Camera pulled back */
+    transform: scale(0.974) translate3d(0, -9px, -55px);
+  }
+  97.1% { /* 6.8s: Target 0.97 scale reached */
+    transform: scale(0.970) translate3d(0, -10px, -65px);
+  }
+  100% { /* 7.0s */
+    transform: scale(0.968) translate3d(0, -10px, -70px);
+  }
+}
+
+/* =========================================================================
+   HERO LOGO & BRAND REVEAL (4.8s - 6.6s, then fade at 6.6s)
+   ========================================================================= */
+
+@keyframes introHeroLogoReveal {
+  0%, 68% { /* 0.0s - 4.8s: Hidden until cards orbit out */
+    opacity: 0;
+    transform: translate3d(0, 0, -200px) scale(0.65);
+    filter: blur(14px);
+  }
+  76% { /* 5.3s - Emerges smoothly */
+    opacity: 1;
+    transform: translate3d(0, 0, 30px) scale(1.06);
+    filter: blur(0px);
+  }
+  81% { /* 5.7s - Settles to Hero Lockup */
+    opacity: 1;
+    transform: translate3d(0, 0, 0px) scale(1.0);
+    filter: blur(0px);
+  }
+  91.4% { /* 6.4s - Holds Rock Steady */
+    opacity: 1;
+    transform: translate3d(0, 0, 0px) scale(1.0);
+    filter: blur(0px);
+  }
+  94.3% { /* 6.6s - "6.6s: Logo intro mulai fade" */
+    opacity: 0.75;
+    transform: translate3d(0, 0, -10px) scale(0.98);
+    filter: blur(1px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.15;
+    transform: translate3d(0, 0, -25px) scale(0.96);
+    filter: blur(4px);
+  }
+  100% { /* 7.0s - Dissolved */
+    opacity: 0;
+    transform: translate3d(0, 0, -40px) scale(0.94);
+    filter: blur(6px);
+  }
+}
+
+/* Brand Name Lockup */
+@keyframes introBrandTitleReveal {
+  0%, 82% { /* 0.0s - 5.75s: Waiting for logo settle */
+    opacity: 0;
+    letter-spacing: 0.18em;
+    transform: translateY(14px);
+    filter: blur(8px);
+  }
+  87% { /* 6.1s - Sharp & Centered */
+    opacity: 1;
+    letter-spacing: -0.02em;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+  91.4% { /* 6.4s - Holds */
+    opacity: 1;
+    letter-spacing: -0.02em;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+  94.3% { /* 6.6s - "6.6s: Logo intro mulai fade" */
+    opacity: 0.75;
+    transform: scale(0.98) translateY(-4px);
+    filter: blur(1.5px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.15;
+    transform: scale(0.96) translateY(-8px);
+    filter: blur(4px);
+  }
+  100% { /* 7.0s */
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+    filter: blur(6px);
+  }
+}
+
+@keyframes introBrandSubtitleReveal {
+  0%, 85% { /* 0.0s - 5.95s */
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  89% { /* 6.25s */
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+  91.4% { /* 6.4s - Holds */
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+  94.3% { /* 6.6s - Fades */
+    opacity: 0.75;
+    transform: scale(0.98) translateY(-3px);
+    filter: blur(1.5px);
+  }
+  97.1% { /* 6.8s */
+    opacity: 0.15;
+    transform: scale(0.96) translateY(-6px);
+    filter: blur(4px);
+  }
+  100% { /* 7.0s */
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+    filter: blur(5px);
+  }
+}
+
+/* =========================================================================
+   CINEMATIC GLOSSY COMMERCIAL LIGHT SWEEP BRIDGE (6.3s - 6.8s)
+   "6.5s: Light sweep melewati layar LEFT -> RIGHT sebagai jembatan cahaya"
+   ========================================================================= */
+
+@keyframes introBigCommercialSweep {
+  0%, 89.5% { /* 0.0s - 6.26s: Waiting Off-screen Left */
+    transform: translateX(-160%) skewX(-20deg);
+    opacity: 0;
+  }
+  90.5% { /* 6.33s: Sweeps into View from Left */
+    transform: translateX(-130%) skewX(-20deg);
+    opacity: 0.85;
+  }
+  92.9% { /* 6.50s: EXACT CENTER SCREEN (Peak of Light Bridge) */
+    transform: translateX(0%) skewX(-20deg);
+    opacity: 1;
+  }
+  95.5% { /* 6.68s: Glides smoothly towards Right */
+    transform: translateX(130%) skewX(-20deg);
+    opacity: 0.80;
+  }
+  97.5% { /* 6.82s: Clears screen to the Right */
+    transform: translateX(250%) skewX(-20deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(250%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+/* Specular Bloom on Entire Stage when Sweep passes */
+@keyframes introStageBloomHighlight {
+  0%, 90% {
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  92.9% { /* Peak of sweep at 6.5s */
+    filter: drop-shadow(0 0 45px rgba(56, 189, 248, 0.55)) brightness(1.25);
+  }
+  96% {
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  100% {
+    filter: drop-shadow(0 0 0px transparent);
+  }
+}
+
+/* =========================================================================
+   HOMEPAGE REVEAL FROM BEHIND (6.0s - 7.0s Synchronized Smooth Transition)
+   Homepage:
+   opacity: 0.15 -> 1.0
+   blur: 8px -> 4px -> 1px -> 0px
+   scale: 1.03 -> 1.0
+   brightness: 0.68 -> 1.0
+   ========================================================================= */
+
+@keyframes introHomepageRevealDepth {
+  0%, 85.7% { /* 0.0s - 6.0s: Darkened, blurred, scaled in background */
+    opacity: 0.15;
+    filter: blur(8px) brightness(0.68);
+    transform: scale(1.03);
+  }
+  87.1% { /* 6.1s: Homepage begins appearing */
+    opacity: 0.28;
+    filter: blur(7.5px) brightness(0.72);
+    transform: scale(1.027);
+  }
+  88.6% { /* 6.2s: Floating objects move away */
+    opacity: 0.45;
+    filter: blur(6px) brightness(0.78);
+    transform: scale(1.022);
+  }
+  90.0% { /* 6.3s: Curtain parts further */
+    opacity: 0.60;
+    filter: blur(5px) brightness(0.84);
+    transform: scale(1.017);
+  }
+  91.4% { /* 6.4s: Homepage becoming sharper */
+    opacity: 0.72;
+    filter: blur(4px) brightness(0.89);
+    transform: scale(1.012);
+  }
+  92.9% { /* 6.5s: LIGHT SWEEP PASSES CENTER (Optimum Cross-fade Bridge) */
+    opacity: 0.88;
+    filter: blur(2px) brightness(0.95);
+    transform: scale(1.007);
+  }
+  94.3% { /* 6.6s: Intro logo fades out */
+    opacity: 0.94;
+    filter: blur(1.2px) brightness(0.98);
+    transform: scale(1.003);
+  }
+  95.7% { /* 6.7s: Homepage almost fully visible */
+    opacity: 0.98;
+    filter: blur(0.5px) brightness(0.995);
+    transform: scale(1.001);
+  }
+  97.1% { /* 6.8s: Homepage 100% SHARP, scale 1.0, full brightness */
+    opacity: 1;
+    filter: blur(0px) brightness(1);
+    transform: scale(1);
+  }
+  100% { /* 7.0s: Flawlessly stable before unmount */
+    opacity: 1;
+    filter: blur(0px) brightness(1);
+    transform: scale(1);
+  }
+}
+
+/* =========================================================================
+   HERO CONTENT STAGGERED ENTRANCE (Detik 6.1 - 7.0)
+   Title -> Subtitle -> CTA Buttons
+   ========================================================================= */
+
+@keyframes heroTitleEntranceKeyframes {
+  0%, 87.5% { /* 0.0s - 6.12s: Hidden below */
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  93.0% { /* 6.51s: Rising gently */
+    opacity: 0.70;
+    transform: translateY(5px);
+  }
+  97.5% { /* 6.82s: Settled in place */
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroSubtitleEntranceKeyframes {
+  0%, 89.5% { /* 0.0s - 6.26s: Hidden below */
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  94.5% { /* 6.61s: Rising gently */
+    opacity: 0.75;
+    transform: translateY(4px);
+  }
+  98.5% { /* 6.90s: Settled in place */
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroCtaEntranceKeyframes {
+  0%, 91.5% { /* 0.0s - 6.40s: Hidden below */
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  96.0% { /* 6.72s: Rising gently */
+    opacity: 0.80;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================================
+   ANIMATION CLASS SELECTORS (ALL USE PREMIUM EASING: cubic-bezier(0.22, 1, 0.36, 1))
+   ========================================================================= */
+
+.animate-intro-curtain-left {
+  animation: introCurtainLeftKeyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-intro-curtain-right {
+  animation: introCurtainRightKeyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-intro-curtain-seam {
+  animation: introCurtainSeamKeyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-intro-commercial-overlay {
+  animation: introCommercialOverlay 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: opacity, visibility;
+}
+
+.animate-intro-cyber-grid {
+  animation: introCyberGrid 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-intro-digital-ring {
+  animation: introDigitalRing 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-intro-ambient-bloom {
+  animation: introAmbientBloom 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-intro-stage-camera {
+  animation: introStageCameraPullback 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform;
+}
+
+.animate-intro-card-1 {
+  animation: introCard1Keyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-card-2 {
+  animation: introCard2Keyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-card-3 {
+  animation: introCard3Keyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-card-4 {
+  animation: introCard4Keyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-card-5 {
+  animation: introCard5Keyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-card-sheen {
+  animation: introCardGlossSheen 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-intro-hero-logo {
+  animation: introHeroLogoReveal 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-brand-title {
+  animation: introBrandTitleReveal 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-brand-subtitle {
+  animation: introBrandSubtitleReveal 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-intro-big-sweep {
+  animation: introBigCommercialSweep 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-intro-stage-bloom {
+  animation: introStageBloomHighlight 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Applied to homepage content while intro is active */
+.intro-active #homepage-content {
+  animation: introHomepageRevealDepth 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: center top;
+  will-change: transform, filter, opacity;
+}
+
+/* Scoped hero entrance while intro is active */
+.intro-active .hero-title-entrance {
+  animation: heroTitleEntranceKeyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.intro-active .hero-subtitle-entrance {
+  animation: heroSubtitleEntranceKeyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.intro-active .hero-cta-entrance {
+  animation: heroCtaEntranceKeyframes 7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+
+
+
