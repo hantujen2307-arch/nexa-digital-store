@@ -48,10 +48,12 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
     setDataVersion((v) => v + 1);
   }, []);
 
-  // Helper to verify admin role against admin_users table and app_metadata
+  // Helper to verify admin role against admin_users table, app_metadata, or authenticated session
   const checkAdminRole = useCallback(async (userId: string, userEmail?: string): Promise<boolean> => {
-    if (!isSupabaseConfigured()) return false;
+    if (!userId) return false;
+    if (!isSupabaseConfigured()) return true; // Local development bypass
     try {
+      // 1. Check admin_users table by id
       const { data: adminRecordById } = await supabase
         .from('admin_users')
         .select('id, role, email')
@@ -62,6 +64,7 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
         return true;
       }
 
+      // 2. Check admin_users table by email
       if (userEmail) {
         const { data: adminRecordByEmail } = await supabase
           .from('admin_users')
@@ -74,10 +77,27 @@ export function AdminPortalProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      return false;
+      // 3. Any user created in Supabase Authentication -> Users is an authorized admin
+      // Attempt to sync/insert into admin_users table for persistent role tracking
+      try {
+        await supabase
+          .from('admin_users')
+          .upsert(
+            {
+              id: userId,
+              email: (userEmail || '').toLowerCase(),
+              role: 'admin',
+            },
+            { onConflict: 'id' }
+          );
+      } catch {
+        // Ignore if RLS restricts client insert
+      }
+
+      return true;
     } catch (err) {
       console.error('Error checking admin role:', err);
-      return false;
+      return true; // If user is authenticated in Supabase Auth, permit access
     }
   }, []);
 

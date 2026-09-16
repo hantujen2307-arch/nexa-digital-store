@@ -23,12 +23,6 @@ export default function AdminLoginModal() {
     setErrorMsg(null);
     setLoading(true);
 
-    if (!isSupabaseConfigured()) {
-      setErrorMsg('Koneksi Supabase belum terkonfigurasi di environment variables.');
-      setLoading(false);
-      return;
-    }
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -36,8 +30,13 @@ export default function AdminLoginModal() {
       });
 
       if (error) {
-        if (error.message.toLowerCase().includes('invalid login credentials')) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('invalid login credentials') || msg.includes('invalid_grant')) {
           setErrorMsg('Email atau password salah. Pastikan akun admin Anda sudah benar.');
+        } else if (msg.includes('email not confirmed')) {
+          setErrorMsg('Email belum dikonfirmasi di Supabase. Buka Supabase Auth Settings dan matikan "Confirm email" atau konfirmasi email Anda.');
+        } else if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('name_not_resolved')) {
+          setErrorMsg('Gagal terhubung ke database Supabase. Periksa koneksi internet Anda.');
         } else {
           setErrorMsg(error.message || 'Gagal masuk. Periksa email dan password Anda.');
         }
@@ -47,10 +46,9 @@ export default function AdminLoginModal() {
 
       if (data?.session && data?.user) {
         // Verify admin authorization
-        const hasAdminRole = await checkAdminRole(data.user.id, data.user.email);
-        const hasAppMeta = data.user.app_metadata?.role === 'admin';
+        const isAuthorized = await checkAdminRole(data.user.id, data.user.email);
 
-        if (!hasAdminRole && !hasAppMeta) {
+        if (!isAuthorized) {
           await supabase.auth.signOut();
           setErrorMsg('Akses ditolak: Akun Anda tidak terdaftar sebagai Administrator.');
           setLoading(false);
@@ -64,7 +62,12 @@ export default function AdminLoginModal() {
         openDashboard('dashboard');
       }
     } catch (err: unknown) {
-      setErrorMsg((err as Error).message || 'Terjadi kesalahan saat verifikasi admin.');
+      const errMsg = (err as Error)?.message || '';
+      if (errMsg.toLowerCase().includes('failed to fetch')) {
+        setErrorMsg('Gagal menghubungi server database. Periksa koneksi internet Anda.');
+      } else {
+        setErrorMsg(errMsg || 'Terjadi kesalahan saat verifikasi admin.');
+      }
     } finally {
       setLoading(false);
     }

@@ -69,12 +69,6 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
     setLoginError(null);
     setLoginLoading(true);
 
-    if (!isSupabaseConfigured()) {
-      setLoginError('Koneksi Supabase belum terkonfigurasi. Periksa NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.');
-      setLoginLoading(false);
-      return;
-    }
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -82,8 +76,13 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
       });
 
       if (error) {
-        if (error.message.toLowerCase().includes('invalid login credentials')) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('invalid login credentials') || msg.includes('invalid_grant')) {
           setLoginError('Email atau password salah. Pastikan akun admin Anda sudah benar.');
+        } else if (msg.includes('email not confirmed')) {
+          setLoginError('Email belum dikonfirmasi di Supabase. Buka Supabase Auth Settings dan matikan "Confirm email" atau konfirmasi email Anda.');
+        } else if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('name_not_resolved')) {
+          setLoginError('Gagal terhubung ke database Supabase. Periksa koneksi internet Anda.');
         } else {
           setLoginError(error.message || 'Gagal masuk. Periksa email dan password Anda.');
         }
@@ -92,10 +91,9 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
       }
 
       if (data?.session && data?.user) {
-        const hasAdminRole = await checkAdminRole(data.user.id, data.user.email);
-        const hasAppMeta = data.user.app_metadata?.role === 'admin';
+        const isAuthorized = await checkAdminRole(data.user.id, data.user.email);
 
-        if (!hasAdminRole && !hasAppMeta) {
+        if (!isAuthorized) {
           await supabase.auth.signOut();
           setLoginError('Akses ditolak: Akun Anda tidak terdaftar sebagai Administrator.');
           setLoginLoading(false);
@@ -106,7 +104,12 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
         setPassword('');
       }
     } catch (err: unknown) {
-      setLoginError((err as Error).message || 'Terjadi kesalahan saat otentikasi admin.');
+      const errMsg = (err as Error)?.message || '';
+      if (errMsg.toLowerCase().includes('failed to fetch')) {
+        setLoginError('Gagal menghubungi server database. Periksa koneksi internet Anda.');
+      } else {
+        setLoginError(errMsg || 'Terjadi kesalahan saat otentikasi admin.');
+      }
     } finally {
       setLoginLoading(false);
     }
