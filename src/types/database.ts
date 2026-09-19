@@ -24,6 +24,7 @@ export interface Product {
   packages?: ProductPackage[];
   min_price?: number;
   min_original_price?: number | null;
+  sold_count?: number | null;
 }
 
 export interface Service {

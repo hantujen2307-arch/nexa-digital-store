@@ -22,8 +22,10 @@ import {
   MessageCircle,
   HelpCircle,
   Download,
-  ExternalLink
+  ExternalLink,
+  CheckCircle
 } from 'lucide-react';
+import { getProductSoldCount } from '@/lib/products';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -133,6 +135,8 @@ export default function ProductDetailPage() {
     ? Math.round(((defaultPackageOriginalPrice - defaultPackage.price) / defaultPackageOriginalPrice) * 100)
     : null;
 
+  const soldCount = getProductSoldCount(product);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-cyan-500 selection:text-zinc-950">
       <Navbar />
@@ -180,6 +184,10 @@ export default function ProductDetailPage() {
                       {product.badge}
                     </span>
                   )}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800/50 shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Terjual {soldCount}</span>
+                  </span>
                 </div>
 
                 <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
@@ -243,7 +251,7 @@ export default function ProductDetailPage() {
                 <h3 className="text-base font-bold text-white mb-4">
                   Informasi & Jaminan Layanan
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-zinc-300">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-zinc-300">
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60">
                     <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                     <div>
@@ -260,6 +268,16 @@ export default function ProductDetailPage() {
                       <span className="font-bold text-white block mb-0.5">Pengiriman Cepat</span>
                       <p className="text-zinc-400 text-[11px]">
                         Akun dikirim via WhatsApp dalam 5-15 menit setelah pembayaran diverifikasi.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60">
+                    <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-white block mb-0.5">Terbukti Terpercaya</span>
+                      <p className="text-zinc-400 text-[11px]">
+                        Sudah terjual {soldCount} akun & pesanan aktif dengan kepuasan pembeli tinggi.
                       </p>
                     </div>
                   </div>

@@ -9,6 +9,7 @@ import { formatRupiah } from '@/lib/whatsapp';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import Toast, { ToastMessage } from '@/components/admin/Toast';
 import { useAdminPortal } from '@/context/AdminPortalContext';
+import { getProductSoldCount } from '@/lib/products';
 import { 
   Plus, 
   Edit3, 
@@ -1062,6 +1063,10 @@ export default function ProductsTab() {
                                 {product.badge}
                               </span>
                             )}
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-medium bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
+                              <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                              Terjual {getProductSoldCount(product)}
+                            </span>
                           </div>
                           <span className="text-[11px] text-zinc-500 line-clamp-1 max-w-xs">
                             {product.description}

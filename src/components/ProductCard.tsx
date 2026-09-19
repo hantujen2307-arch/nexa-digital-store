@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Product } from '@/types/database';
 import { formatRupiah, getProductOrderWhatsAppUrl } from '@/lib/whatsapp';
 import { ChevronRight, MessageCircle, Sparkles } from 'lucide-react';
+import { getProductSoldCount } from '@/lib/products';
 
 interface ProductCardProps {
   product: Product;
@@ -33,6 +34,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const discountPercent = minOriginalPrice && minOriginalPrice > minPackagePrice
     ? Math.round(((minOriginalPrice - minPackagePrice) / minOriginalPrice) * 100)
     : null;
+
+  const soldCount = getProductSoldCount(product);
 
   return (
     <div className="group relative flex flex-col justify-between rounded-2xl bg-zinc-900/60 border border-zinc-800/80 p-4 sm:p-5 transition-all duration-300 hover:border-zinc-700 hover:bg-zinc-900/90 hover:shadow-xl hover:shadow-black/50 hover:-translate-y-1">
@@ -62,10 +65,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        {/* Category & Title */}
-        <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400 block mb-1">
-          {product.category || 'Aplikasi'}
-        </span>
+        {/* Category & Sold Count */}
+        <div className="flex items-center justify-between gap-1.5 mb-1.5">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400">
+            {product.category || 'Aplikasi'}
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800/50 shadow-sm shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Terjual {soldCount}</span>
+          </span>
+        </div>
+
         <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1 mb-1.5">
           {product.name}
         </h3>

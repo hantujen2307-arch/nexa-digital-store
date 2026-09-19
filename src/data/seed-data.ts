@@ -12,6 +12,7 @@ export const initialProducts: Product[] = [
     badge: 'Populer',
     active: true,
     min_price: 25000,
+    sold_count: 48,
     packages: [
       { id: 'pkg-canva-1', product_id: 'prod-1', duration: '1 Bulan', price: 25000, active: true },
       { id: 'pkg-canva-2', product_id: 'prod-1', duration: '3 Bulan', price: 55000, active: true },
@@ -29,6 +30,7 @@ export const initialProducts: Product[] = [
     badge: 'Trending',
     active: true,
     min_price: 20000,
+    sold_count: 33,
     packages: [
       { id: 'pkg-capcut-1', product_id: 'prod-2', duration: '1 Bulan', price: 20000, active: true },
       { id: 'pkg-capcut-2', product_id: 'prod-2', duration: '3 Bulan', price: 50000, active: true },
@@ -46,6 +48,7 @@ export const initialProducts: Product[] = [
     badge: 'Best Seller',
     active: true,
     min_price: 55000,
+    sold_count: 56,
     packages: [
       { id: 'pkg-gpt-1', product_id: 'prod-3', duration: '1 Bulan', price: 55000, active: true },
       { id: 'pkg-gpt-2', product_id: 'prod-3', duration: '3 Bulan', price: 150000, active: true },
@@ -62,6 +65,7 @@ export const initialProducts: Product[] = [
     badge: 'Terlaris',
     active: true,
     min_price: 15000,
+    sold_count: 58,
     packages: [
       { id: 'pkg-spot-1', product_id: 'prod-4', duration: '1 Bulan', price: 15000, active: true },
       { id: 'pkg-spot-2', product_id: 'prod-4', duration: '3 Bulan', price: 40000, active: true },
@@ -79,6 +83,7 @@ export const initialProducts: Product[] = [
     badge: 'Favorit',
     active: true,
     min_price: 12000,
+    sold_count: 53,
     packages: [
       { id: 'pkg-yt-1', product_id: 'prod-5', duration: '1 Bulan', price: 12000, active: true },
       { id: 'pkg-yt-2', product_id: 'prod-5', duration: '3 Bulan', price: 32000, active: true },
@@ -96,6 +101,7 @@ export const initialProducts: Product[] = [
     badge: 'Paling Laris',
     active: true,
     min_price: 25000,
+    sold_count: 59,
     packages: [
       { id: 'pkg-nflx-1', product_id: 'prod-6', duration: '1 Bulan', price: 25000, active: true },
       { id: 'pkg-nflx-2', product_id: 'prod-6', duration: '3 Bulan', price: 70000, active: true },
@@ -112,6 +118,7 @@ export const initialProducts: Product[] = [
     badge: 'Kantor & Kampus',
     active: true,
     min_price: 35000,
+    sold_count: 32,
     packages: [
       { id: 'pkg-ms-1', product_id: 'prod-7', duration: '1 Bulan', price: 35000, active: true },
       { id: 'pkg-ms-2', product_id: 'prod-7', duration: '1 Tahun', price: 150000, active: true },
@@ -128,6 +135,7 @@ export const initialProducts: Product[] = [
     badge: 'Akademik',
     active: true,
     min_price: 28000,
+    sold_count: 24,
     packages: [
       { id: 'pkg-gram-1', product_id: 'prod-8', duration: '1 Bulan', price: 28000, active: true },
       { id: 'pkg-gram-2', product_id: 'prod-8', duration: '3 Bulan', price: 75000, active: true },
@@ -144,6 +152,7 @@ export const initialProducts: Product[] = [
     badge: 'Pro Kreator',
     active: true,
     min_price: 75000,
+    sold_count: 39,
     packages: [
       { id: 'pkg-adob-1', product_id: 'prod-9', duration: '1 Bulan', price: 75000, active: true },
       { id: 'pkg-adob-2', product_id: 'prod-9', duration: '3 Bulan', price: 210000, active: true },
@@ -160,6 +169,7 @@ export const initialProducts: Product[] = [
     badge: 'Storage',
     active: true,
     min_price: 20000,
+    sold_count: 27,
     packages: [
       { id: 'pkg-g1-1', product_id: 'prod-10', duration: '1 Bulan (100GB)', price: 20000, active: true },
       { id: 'pkg-g1-2', product_id: 'prod-10', duration: '1 Tahun (100GB)', price: 95000, active: true },
@@ -177,6 +187,7 @@ export const initialProducts: Product[] = [
     badge: 'Meeting',
     active: true,
     min_price: 30000,
+    sold_count: 35,
     packages: [
       { id: 'pkg-zoom-1', product_id: 'prod-11', duration: '1 Hari (Meeting)', price: 15000, active: true },
       { id: 'pkg-zoom-2', product_id: 'prod-11', duration: '1 Bulan', price: 65000, active: true },
@@ -193,6 +204,7 @@ export const initialProducts: Product[] = [
     badge: 'Eksklusif',
     active: true,
     min_price: 35000,
+    sold_count: 41,
     packages: [
       { id: 'pkg-tele-1', product_id: 'prod-12', duration: '3 Bulan', price: 95000, active: true },
       { id: 'pkg-tele-2', product_id: 'prod-12', duration: '6 Bulan', price: 175000, active: true },
@@ -210,6 +222,7 @@ export const initialProducts: Product[] = [
     badge: 'Bahasa',
     active: true,
     min_price: 25000,
+    sold_count: 22,
     packages: [
       { id: 'pkg-duo-1', product_id: 'prod-13', duration: '1 Bulan', price: 25000, active: true },
       { id: 'pkg-duo-2', product_id: 'prod-13', duration: '1 Tahun', price: 110000, active: true },
@@ -226,6 +239,7 @@ export const initialProducts: Product[] = [
     badge: 'Foto Kreatif',
     active: true,
     min_price: 18000,
+    sold_count: 29,
     packages: [
       { id: 'pkg-pics-1', product_id: 'prod-14', duration: '1 Bulan', price: 18000, active: true },
       { id: 'pkg-pics-2', product_id: 'prod-14', duration: '1 Tahun', price: 75000, active: true },
@@ -242,6 +256,7 @@ export const initialProducts: Product[] = [
     badge: 'Custom Request',
     active: true,
     min_price: 20000,
+    sold_count: 17,
     packages: [
       { id: 'pkg-other-1', product_id: 'prod-15', duration: 'Paket Sesuai Request', price: 20000, active: true },
     ],
