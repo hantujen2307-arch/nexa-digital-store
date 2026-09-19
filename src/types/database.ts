@@ -53,6 +53,7 @@ export interface CinemaPromo {
   active: boolean;
   created_at?: string;
   updated_at?: string;
+  sold_count?: number | null;
 }
 
 export interface DashboardStats {

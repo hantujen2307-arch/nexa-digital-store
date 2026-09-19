@@ -4,6 +4,7 @@ import React from 'react';
 import { CinemaPromo } from '@/types/database';
 import { formatRupiah, getCinemaOrderWhatsAppUrl } from '@/lib/whatsapp';
 import { Calendar, Ticket, MessageCircle } from 'lucide-react';
+import { getCinemaPromoSoldCount } from '@/lib/products';
 
 interface CinemaPromoCardProps {
   promo: CinemaPromo;
@@ -15,6 +16,8 @@ export default function CinemaPromoCard({ promo }: CinemaPromoCardProps) {
     promo.cinema,
     promo.price
   );
+
+  const soldCount = getCinemaPromoSoldCount(promo);
 
   const originalPrice = promo.original_price || (promo.price > 0 ? Math.round((promo.price * 1.6) / 5000) * 5000 : null);
   const discountPercent = originalPrice && originalPrice > promo.price
@@ -52,6 +55,17 @@ export default function CinemaPromoCard({ promo }: CinemaPromoCardProps) {
       {/* Content */}
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
+          {/* Cinema Tag & Sold Count */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400">
+              {promo.cinema}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800/50 shadow-sm shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Terjual {soldCount}</span>
+            </span>
+          </div>
+
           <h3 className="text-base font-bold text-white mb-2 line-clamp-1">
             {promo.name}
           </h3>

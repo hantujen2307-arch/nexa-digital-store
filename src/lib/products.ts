@@ -1,4 +1,4 @@
-import { Product } from '@/types/database';
+import { Product, CinemaPromo } from '@/types/database';
 
 /**
  * Returns the realistic sold count ("sudah terjual") for a given product.
@@ -47,5 +47,39 @@ export function getProductSoldCount(product: Partial<Product> | null | undefined
   }
   const min = 18;
   const max = 58;
+  return min + (Math.abs(hash) % (max - min + 1));
+}
+
+/**
+ * Returns the realistic sold count ("sudah terjual") for a cinema promo ticket.
+ * - If promo explicitly has `sold_count`, use it (strictly capped at 60).
+ * - Pre-configured realistic sales counts (all <= 60).
+ * - Fallback: deterministic hash between 28 and 56 (never exceeding 60).
+ */
+export function getCinemaPromoSoldCount(promo: Partial<CinemaPromo> | null | undefined): number {
+  if (!promo) return 38;
+
+  if (typeof promo.sold_count === 'number' && promo.sold_count > 0) {
+    return Math.min(Math.round(promo.sold_count), 60);
+  }
+
+  const nameLower = (promo.name || '').toLowerCase();
+  const cinemaLower = (promo.cinema || '').toLowerCase();
+
+  // XXI is the most popular cinema chain
+  if (nameLower.includes('xxi') || cinemaLower.includes('xxi')) return 52;
+  // CGV is second most popular
+  if (nameLower.includes('cgv') || cinemaLower.includes('cgv')) return 45;
+  // Cinépolis
+  if (nameLower.includes('cine') || cinemaLower.includes('cine')) return 38;
+
+  const key = promo.id || promo.name || promo.cinema || 'promo';
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+    hash |= 0;
+  }
+  const min = 28;
+  const max = 56;
   return min + (Math.abs(hash) % (max - min + 1));
 }

@@ -8,6 +8,7 @@ import { uploadImage } from '@/lib/supabase/storage';
 import { formatRupiah } from '@/lib/whatsapp';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import Toast, { ToastMessage } from '@/components/admin/Toast';
+import { getCinemaPromoSoldCount } from '@/lib/products';
 import { 
   Plus, 
   Edit3, 
@@ -442,7 +443,13 @@ export default function PromosTab() {
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
-                      <div className="font-bold text-white text-sm">{p.name}</div>
+                      <div className="font-bold text-white text-sm flex items-center gap-2">
+                        <span>{p.name}</span>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-medium bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
+                          <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                          Terjual {getCinemaPromoSoldCount(p)}
+                        </span>
+                      </div>
                       <div className="text-[11px] text-zinc-500 line-clamp-1 max-w-xs mt-0.5">
                         {p.description}
                       </div>

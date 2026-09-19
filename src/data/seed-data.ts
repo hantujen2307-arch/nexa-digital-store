@@ -349,6 +349,7 @@ export const initialCinemaPromos: CinemaPromo[] = [
     end_date: '2026-12-31',
     image_url: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&auto=format&fit=crop&q=80',
     active: true,
+    sold_count: 52,
   },
   {
     id: 'promo-2',
@@ -360,6 +361,7 @@ export const initialCinemaPromos: CinemaPromo[] = [
     end_date: '2026-12-31',
     image_url: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&auto=format&fit=crop&q=80',
     active: true,
+    sold_count: 45,
   },
   {
     id: 'promo-3',
@@ -371,5 +373,6 @@ export const initialCinemaPromos: CinemaPromo[] = [
     end_date: '2026-12-31',
     image_url: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&auto=format&fit=crop&q=80',
     active: true,
+    sold_count: 38,
   },
 ];
