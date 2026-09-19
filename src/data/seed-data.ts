@@ -65,7 +65,7 @@ export const initialProducts: Product[] = [
     badge: 'Terlaris',
     active: true,
     min_price: 15000,
-    sold_count: 58,
+    sold_count: 57,
     packages: [
       { id: 'pkg-spot-1', product_id: 'prod-4', duration: '1 Bulan', price: 15000, active: true },
       { id: 'pkg-spot-2', product_id: 'prod-4', duration: '3 Bulan', price: 40000, active: true },
@@ -83,7 +83,7 @@ export const initialProducts: Product[] = [
     badge: 'Favorit',
     active: true,
     min_price: 12000,
-    sold_count: 53,
+    sold_count: 54,
     packages: [
       { id: 'pkg-yt-1', product_id: 'prod-5', duration: '1 Bulan', price: 12000, active: true },
       { id: 'pkg-yt-2', product_id: 'prod-5', duration: '3 Bulan', price: 32000, active: true },
@@ -118,7 +118,7 @@ export const initialProducts: Product[] = [
     badge: 'Kantor & Kampus',
     active: true,
     min_price: 35000,
-    sold_count: 32,
+    sold_count: 31,
     packages: [
       { id: 'pkg-ms-1', product_id: 'prod-7', duration: '1 Bulan', price: 35000, active: true },
       { id: 'pkg-ms-2', product_id: 'prod-7', duration: '1 Tahun', price: 150000, active: true },
@@ -169,7 +169,7 @@ export const initialProducts: Product[] = [
     badge: 'Storage',
     active: true,
     min_price: 20000,
-    sold_count: 27,
+    sold_count: 26,
     packages: [
       { id: 'pkg-g1-1', product_id: 'prod-10', duration: '1 Bulan (100GB)', price: 20000, active: true },
       { id: 'pkg-g1-2', product_id: 'prod-10', duration: '1 Tahun (100GB)', price: 95000, active: true },
@@ -204,7 +204,7 @@ export const initialProducts: Product[] = [
     badge: 'Eksklusif',
     active: true,
     min_price: 35000,
-    sold_count: 41,
+    sold_count: 44,
     packages: [
       { id: 'pkg-tele-1', product_id: 'prod-12', duration: '3 Bulan', price: 95000, active: true },
       { id: 'pkg-tele-2', product_id: 'prod-12', duration: '6 Bulan', price: 175000, active: true },
@@ -222,7 +222,7 @@ export const initialProducts: Product[] = [
     badge: 'Bahasa',
     active: true,
     min_price: 25000,
-    sold_count: 22,
+    sold_count: 21,
     packages: [
       { id: 'pkg-duo-1', product_id: 'prod-13', duration: '1 Bulan', price: 25000, active: true },
       { id: 'pkg-duo-2', product_id: 'prod-13', duration: '1 Tahun', price: 110000, active: true },
