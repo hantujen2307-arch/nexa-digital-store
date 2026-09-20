@@ -252,14 +252,14 @@ DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 CREATE POLICY "Public Access"
     ON storage.objects FOR SELECT
     TO public
-    USING (bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets'));
+    USING (bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets', 'food-drink-images', 'drink-images'));
 
 DROP POLICY IF EXISTS "Admin upload storage images" ON storage.objects;
 CREATE POLICY "Admin upload storage images"
     ON storage.objects FOR INSERT
     TO authenticated
     WITH CHECK (
-        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets')
+        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets', 'food-drink-images', 'drink-images')
         AND public.is_admin(auth.uid())
     );
 
@@ -268,11 +268,11 @@ CREATE POLICY "Admin update storage images"
     ON storage.objects FOR UPDATE
     TO authenticated
     USING (
-        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets')
+        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets', 'food-drink-images', 'drink-images')
         AND public.is_admin(auth.uid())
     )
     WITH CHECK (
-        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets')
+        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets', 'food-drink-images', 'drink-images')
         AND public.is_admin(auth.uid())
     );
 
@@ -281,7 +281,7 @@ CREATE POLICY "Admin delete storage images"
     ON storage.objects FOR DELETE
     TO authenticated
     USING (
-        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets')
+        bucket_id IN ('product-images', 'service-images', 'cinema-images', 'store-assets', 'food-drink-images', 'drink-images')
         AND public.is_admin(auth.uid())
     );
 

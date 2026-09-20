@@ -206,22 +206,47 @@ export default function FoodDrinksTab() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset nilai input agar memilih file yang sama bisa memicu event kembali
+    e.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setToast({ id: Date.now().toString(), type: 'error', text: 'File harus berformat gambar (JPG, PNG, WEBP).' });
+
+    // 1. Validasi MIME type & Ekstensi (JPG, JPEG, PNG, WEBP)
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const fileExt = (file.name.split('.').pop() || '').toLowerCase();
+    const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
+
+    if (!allowedTypes.includes(file.type) && !allowedExts.includes(fileExt)) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        text: 'Format file tidak didukung. Harap pilih gambar berformat JPG, JPEG, PNG, atau WEBP.',
+      });
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setToast({ id: Date.now().toString(), type: 'error', text: 'Ukuran gambar maksimal 5 MB.' });
+
+    // 2. Validasi Ukuran File (Maksimal 5 MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        text: 'Ukuran gambar terlalu besar. Maksimal ukuran file adalah 5 MB.',
+      });
       return;
     }
+
     setUploadingImage(true);
+    setFormError(null);
+
     const { url, error } = await uploadImage(file, 'food-drink-images');
     if (error) {
-      setToast({ id: Date.now().toString(), type: 'error', text: `Gagal upload: ${error.message}` });
+      console.error('[FoodDrinksTab] Upload error:', error);
+      const errorMsg = `Gagal mengupload gambar: ${error.message}`;
+      setToast({ id: Date.now().toString(), type: 'error', text: errorMsg });
+      setFormError(errorMsg);
     } else if (url) {
       setFormImageUrl(url);
-      setToast({ id: Date.now().toString(), type: 'success', text: 'Gambar berhasil diunggah.' });
+      setToast({ id: Date.now().toString(), type: 'success', text: 'Gambar produk berhasil diunggah.' });
     }
     setUploadingImage(false);
   };
@@ -811,32 +836,87 @@ export default function FoodDrinksTab() {
                 />
               </div>
 
-              {/* Gambar */}
+              {/* Gambar Produk */}
               <div className="pt-2 border-t border-zinc-800">
-                <label className="block text-zinc-300 font-semibold mb-1.5">Gambar Produk</label>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 cursor-pointer transition-colors">
-                    <Upload className="w-3.5 h-3.5 text-orange-400" />
-                    <span>Upload Gambar</span>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} className="hidden" />
-                  </label>
-                  {uploadingImage && <Loader2 className="w-4 h-4 animate-spin text-orange-400" />}
-                  {formImageUrl && (
-                    <div className="flex items-center gap-2">
-                      <img src={formImageUrl} alt="preview" className="w-10 h-10 rounded-lg object-cover border border-zinc-700" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                      <span className="text-[10px] text-emerald-400">Gambar terpasang</span>
-                      <button type="button" onClick={() => setFormImageUrl('')} className="text-zinc-500 hover:text-red-400">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-zinc-300 font-semibold text-xs">Gambar Produk</label>
+                  <span className="text-[11px] text-zinc-500">JPG, PNG, WEBP (Maks. 5MB)</span>
                 </div>
+
+                {/* Preview Box jika gambar sudah ada / diupload */}
+                {formImageUrl ? (
+                  <div className="relative mb-3 p-3 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center gap-3.5 group">
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-700/80 shrink-0">
+                      <img
+                        src={formImageUrl}
+                        alt="Preview Produk"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/100x100?text=Error';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                          <CheckCircle className="w-3 h-3" />
+                          <span>Gambar Terpasang</span>
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400 truncate mt-1 max-w-[240px] sm:max-w-xs" title={formImageUrl}>
+                        {formImageUrl}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white border border-zinc-700 cursor-pointer transition-colors">
+                          <Upload className="w-3 h-3 text-orange-400" />
+                          <span>Ganti Gambar</span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/jpg"
+                            onChange={handleImageUpload}
+                            disabled={uploadingImage}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setFormImageUrl('')}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-950/50 border border-red-900/40 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 cursor-pointer transition-colors shadow-sm">
+                      <Upload className="w-4 h-4 text-orange-400" />
+                      <span>{uploadingImage ? 'Mengupload...' : 'Pilih & Upload Gambar'}</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        onChange={handleImageUpload}
+                        disabled={uploadingImage}
+                        className="hidden"
+                      />
+                    </label>
+                    {uploadingImage && (
+                      <div className="flex items-center gap-2 text-xs text-orange-400">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Mengupload ke Supabase Storage...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <input
                   type="url"
                   value={formImageUrl}
                   onChange={(e) => setFormImageUrl(e.target.value)}
-                  placeholder="Atau tempel URL gambar dari internet..."
-                  className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500"
+                  placeholder="Atau tempel URL gambar (https://...)..."
+                  className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500 text-xs"
                 />
               </div>
 
