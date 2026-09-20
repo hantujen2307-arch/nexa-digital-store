@@ -2,12 +2,14 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import ProductGrid from '@/components/ProductGrid';
 import ServicesSection from '@/components/ServicesSection';
+import DrinksSection from '@/components/DrinksSection';
 import CinemaSection from '@/components/CinemaSection';
 import HowToOrder from '@/components/HowToOrder';
 import CTAWhatsApp from '@/components/CTAWhatsApp';
 import Footer from '@/components/Footer';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import IntroAnimation from '@/components/IntroAnimation';
+
 
 export default function HomePage() {
   return (
@@ -30,7 +32,10 @@ export default function HomePage() {
           {/* 3. 🎬 Jasa Editing & Digital Service */}
           <ServicesSection />
 
-          {/* 4. 🎟️ Promo Tiket Bioskop */}
+          {/* 4. 🥤 Produk Minuman */}
+          <DrinksSection />
+
+          {/* 5. 🎟️ Promo Tiket Bioskop */}
           <CinemaSection />
 
           {/* 5. 🛒 Cara Order (4 Langkah Tanpa Login) */}

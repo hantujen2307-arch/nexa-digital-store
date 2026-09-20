@@ -72,3 +72,18 @@ export interface StoreSettings {
   logo_url: string;
   updated_at?: string;
 }
+
+export interface Drink {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  originalPrice?: number | null;
+  description: string;
+  imageUrl: string;
+  badge?: string | null;
+  active: boolean;
+  sold_count?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
