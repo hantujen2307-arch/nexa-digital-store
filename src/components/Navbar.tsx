@@ -13,8 +13,8 @@ export default function Navbar() {
     { label: 'Home', href: '/' },
     { label: 'Aplikasi', href: '/#aplikasi' },
     { label: 'Jasa', href: '/#jasa' },
-    { label: 'Makanan & Minuman', href: '/#makanan-minuman' },
     { label: 'Promo', href: '/#promo' },
+    { label: 'Makanan & Minuman', href: '/#makanan-minuman' },
     { label: 'Cara Order', href: '/#cara-order' },
   ];
 

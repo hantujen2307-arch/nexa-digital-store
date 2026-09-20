@@ -8,12 +8,14 @@ import DashboardTab from '@/components/admin/tabs/DashboardTab';
 import ProductsTab from '@/components/admin/tabs/ProductsTab';
 import ServicesTab from '@/components/admin/tabs/ServicesTab';
 import PromosTab from '@/components/admin/tabs/PromosTab';
+import FoodDrinksTab from '@/components/admin/tabs/FoodDrinksTab';
 import SettingsTab from '@/components/admin/tabs/SettingsTab';
 import { 
   LayoutDashboard, 
   Package, 
   Video, 
   Ticket, 
+  Utensils,
   Settings, 
   LogOut, 
   ArrowLeft, 
@@ -35,10 +37,11 @@ export default function AdminPanelOverlay() {
   if (!isAdminDashboardOpen || pathname?.startsWith('/admin')) return null;
 
   const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Ringkasan', icon: LayoutDashboard },
     { id: 'products', label: 'Produk Premium', icon: Package },
     { id: 'services', label: 'Jasa Editing', icon: Video },
     { id: 'promos', label: 'Promo Bioskop', icon: Ticket },
+    { id: 'drinks', label: 'Makanan & Minuman', icon: Utensils },
     { id: 'settings', label: 'Pengaturan', icon: Settings },
   ];
 
@@ -142,6 +145,7 @@ export default function AdminPanelOverlay() {
           {activeTab === 'products' && <ProductsTab />}
           {activeTab === 'services' && <ServicesTab />}
           {activeTab === 'promos' && <PromosTab />}
+          {activeTab === 'drinks' && <FoodDrinksTab />}
           {activeTab === 'settings' && <SettingsTab />}
         </div>
       </main>

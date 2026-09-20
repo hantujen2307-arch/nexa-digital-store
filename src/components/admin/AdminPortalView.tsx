@@ -10,7 +10,7 @@ import DashboardTab from '@/components/admin/tabs/DashboardTab';
 import ProductsTab from '@/components/admin/tabs/ProductsTab';
 import ServicesTab from '@/components/admin/tabs/ServicesTab';
 import PromosTab from '@/components/admin/tabs/PromosTab';
-import DrinksTab from '@/components/admin/tabs/DrinksTab';
+import FoodDrinksTab from '@/components/admin/tabs/FoodDrinksTab';
 import SettingsTab from '@/components/admin/tabs/SettingsTab';
 import { 
   LayoutDashboard, 
@@ -362,7 +362,7 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
           {activeTab === 'products' && <ProductsTab />}
           {activeTab === 'services' && <ServicesTab />}
           {activeTab === 'promos' && <PromosTab />}
-          {activeTab === 'drinks' && <DrinksTab />}
+          {activeTab === 'drinks' && <FoodDrinksTab />}
           {activeTab === 'settings' && <SettingsTab />}
         </div>
       </main>
