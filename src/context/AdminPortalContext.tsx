@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured, diagnoseAuthError, AuthDiagnostic } from '@/lib/supabase/client';
 
-export type AdminTab = 'dashboard' | 'products' | 'services' | 'promos' | 'drinks' | 'settings';
+export type AdminTab = 'dashboard' | 'products' | 'services' | 'promos' | 'drinks' | 'food-drinks' | 'settings';
 
 interface AdminPortalContextType {
   isAdminModalOpen: boolean;

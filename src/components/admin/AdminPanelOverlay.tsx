@@ -72,15 +72,16 @@ export default function AdminPanelOverlay() {
         </div>
 
         {/* Center Tab Navigation (Desktop) */}
-        <nav className="hidden md:flex items-center gap-1 bg-zinc-950/70 p-1 rounded-xl border border-zinc-800/80">
+        <nav className="hidden md:flex items-center gap-1 bg-zinc-950/70 p-1 rounded-xl border border-zinc-800/80 overflow-x-auto shrink-0">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+            const isActive = activeTab === tab.id || (tab.id === 'drinks' && activeTab === 'food-drinks');
             return (
               <button
                 key={tab.id}
+                id={`admin-overlay-tab-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -122,10 +123,11 @@ export default function AdminPanelOverlay() {
       <div className="md:hidden flex items-center justify-around bg-zinc-900/95 border-b border-zinc-800 px-2 py-2 overflow-x-auto gap-1 shrink-0">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id || (tab.id === 'drinks' && activeTab === 'food-drinks');
           return (
             <button
               key={tab.id}
+              id={`mobile-overlay-tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-colors ${
                 isActive ? 'text-cyan-400 bg-cyan-950/40' : 'text-zinc-400 hover:text-white'
@@ -145,7 +147,7 @@ export default function AdminPanelOverlay() {
           {activeTab === 'products' && <ProductsTab />}
           {activeTab === 'services' && <ServicesTab />}
           {activeTab === 'promos' && <PromosTab />}
-          {activeTab === 'drinks' && <FoodDrinksTab />}
+          {(activeTab === 'drinks' || activeTab === 'food-drinks') && <FoodDrinksTab />}
           {activeTab === 'settings' && <SettingsTab />}
         </div>
       </main>
