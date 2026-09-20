@@ -61,6 +61,9 @@ export interface DashboardStats {
   activeProducts: number;
   totalServices: number;
   totalPromos: number;
+  totalFoodDrinks: number;
+  activeFoodDrinks: number;
+  outOfStockFoodDrinks: number;
 }
 
 export interface StoreSettings {
@@ -73,17 +76,22 @@ export interface StoreSettings {
   updated_at?: string;
 }
 
-export interface Drink {
+/**
+ * FoodDrink — produk Makanan & Minuman
+ * Disimpan di tabel `food_drinks` di Supabase.
+ */
+export interface FoodDrink {
   id: string;
   name: string;
-  category: string;
-  price: number;
-  originalPrice?: number | null;
+  slug: string;
   description: string;
-  imageUrl: string;
-  badge?: string | null;
-  active: boolean;
-  sold_count?: number | null;
+  category: string;           // 'Makanan' | 'Minuman' | 'Snack' | 'Dessert' | 'Lainnya'
+  price: number;              // harga jual (Rp)
+  original_price?: number | null; // harga coret/normal (opsional)
+  image_url: string | null;
+  stock: number;              // jumlah stok; 0 = habis
+  status: boolean;            // true = aktif & tampil di toko
+  is_featured: boolean;       // true = produk unggulan
   created_at?: string;
   updated_at?: string;
 }

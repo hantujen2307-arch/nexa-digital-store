@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from './client';
 
-export type StorageBucket = 'product-images' | 'service-images' | 'cinema-images' | 'drink-images' | 'store-assets';
+export type StorageBucket = 'product-images' | 'service-images' | 'cinema-images' | 'drink-images' | 'food-drink-images' | 'store-assets';
 
 /**
  * Upload an image file to Supabase Storage and return its public URL

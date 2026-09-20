@@ -3,18 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { initialProducts, initialServices, initialCinemaPromos } from '@/data/seed-data';
+import { initialFoodDrinks } from '@/data/food-drinks';
 import { DashboardStats } from '@/types/database';
 import { useAdminPortal, AdminTab } from '@/context/AdminPortalContext';
-import { 
-  Package, 
-  Video, 
-  Ticket, 
-  CheckCircle2, 
-  Plus, 
-  ArrowRight, 
+import {
+  Package,
+  Video,
+  Ticket,
+  Utensils,
+  CheckCircle2,
+  Plus,
+  ArrowRight,
   Sparkles,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function DashboardTab() {
@@ -24,6 +27,9 @@ export default function DashboardTab() {
     activeProducts: initialProducts.filter((p) => p.active).length,
     totalServices: initialServices.length,
     totalPromos: initialCinemaPromos.length,
+    totalFoodDrinks: initialFoodDrinks.length,
+    activeFoodDrinks: initialFoodDrinks.filter((f) => f.status).length,
+    outOfStockFoodDrinks: initialFoodDrinks.filter((f) => f.status && f.stock === 0).length,
   });
   const [loading, setLoading] = useState(true);
 
@@ -35,18 +41,24 @@ export default function DashboardTab() {
       }
 
       try {
-        const [prodRes, servRes, promoRes] = await Promise.all([
+        const [prodRes, servRes, promoRes, foodRes] = await Promise.all([
           supabase.from('products').select('id, active'),
           supabase.from('services').select('id', { count: 'exact' }),
           supabase.from('cinema_promos').select('id', { count: 'exact' }),
+          supabase.from('food_drinks').select('id, status, stock'),
         ]);
 
         const products = prodRes.data || [];
+        const foodDrinks = foodRes.data || [];
+
         setStats({
           totalProducts: products.length,
           activeProducts: products.filter((p) => p.active).length,
           totalServices: servRes.count || 0,
           totalPromos: promoRes.count || 0,
+          totalFoodDrinks: foodDrinks.length,
+          activeFoodDrinks: foodDrinks.filter((f) => f.status).length,
+          outOfStockFoodDrinks: foodDrinks.filter((f) => f.status && f.stock === 0).length,
         });
       } catch (err) {
         console.error('Error fetching stats:', err);
@@ -72,7 +84,7 @@ export default function DashboardTab() {
             Dashboard Administrator
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Kelola katalog produk aplikasi, jasa editing, promo tiket bioskop, dan informasi WhatsApp.
+            Kelola katalog produk aplikasi, jasa editing, promo tiket bioskop, makanan & minuman, dan pengaturan toko.
           </p>
         </div>
 
@@ -87,9 +99,9 @@ export default function DashboardTab() {
         </div>
       </div>
 
-      {/* Stats Cards Grid */}
+      {/* ── Stats Grid ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Produk */}
+        {/* Total Produk Aplikasi */}
         <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-zinc-400">Total Produk</span>
@@ -146,8 +158,39 @@ export default function DashboardTab() {
         </div>
       </div>
 
-      {/* Quick Action Navigation Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* ── Makanan & Minuman Stats ── */}
+      <div className="rounded-2xl bg-zinc-900/50 border border-orange-800/30 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-zinc-800/80 flex items-center gap-2">
+          <Utensils className="w-4 h-4 text-orange-400" />
+          <span className="text-sm font-bold text-white">Makanan & Minuman</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-zinc-800/60">
+          {[
+            { label: 'Total Produk', value: loading ? null : stats.totalFoodDrinks, color: 'text-white' },
+            { label: 'Produk Aktif', value: loading ? null : stats.activeFoodDrinks, color: 'text-emerald-400' },
+            { label: 'Stok Habis', value: loading ? null : stats.outOfStockFoodDrinks, color: stats.outOfStockFoodDrinks > 0 ? 'text-red-400' : 'text-zinc-500' },
+            { label: 'Total Kategori', value: loading ? null : 5, color: 'text-orange-400' },
+          ].map((s) => (
+            <div key={s.label} className="p-4 text-center">
+              <div className={`text-2xl font-black ${s.color}`}>
+                {s.value === null ? <Loader2 className="w-5 h-5 animate-spin text-zinc-600 mx-auto" /> : s.value}
+              </div>
+              <div className="text-[10px] text-zinc-500 mt-0.5">{s.label}</div>
+            </div>
+          ))}
+        </div>
+        {!loading && stats.outOfStockFoodDrinks > 0 && (
+          <div className="px-5 py-2.5 bg-red-950/20 border-t border-red-800/30 flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+            <span className="text-xs text-red-300">
+              {stats.outOfStockFoodDrinks} produk aktif dengan stok habis — perbarui stok dari tab Makanan & Minuman.
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Quick Actions ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           type="button"
           onClick={() => openDashboard('products')}
@@ -196,6 +239,23 @@ export default function DashboardTab() {
           <h3 className="text-sm font-bold text-white mb-1">Kelola Promo Bioskop</h3>
           <p className="text-xs text-zinc-400 leading-relaxed">
             Update promo bioskop XXI, CGV, Cinépolis, tanggal periode diskon, dan poster promo.
+          </p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => openDashboard('drinks' as AdminTab)}
+          className="text-left p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-orange-500/50 hover:bg-zinc-900 transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-950/40 text-orange-400 flex items-center justify-center border border-orange-800/50">
+              <Utensils className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-orange-400 group-hover:translate-x-1 transition-all" />
+          </div>
+          <h3 className="text-sm font-bold text-white mb-1">Kelola Makanan & Minuman</h3>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            Tambah, edit, dan atur stok produk makanan dan minuman yang tersedia di toko.
           </p>
         </button>
       </div>

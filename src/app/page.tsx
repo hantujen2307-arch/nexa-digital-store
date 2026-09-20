@@ -2,14 +2,13 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import ProductGrid from '@/components/ProductGrid';
 import ServicesSection from '@/components/ServicesSection';
-import DrinksSection from '@/components/DrinksSection';
+import FoodDrinksSection from '@/components/DrinksSection';
 import CinemaSection from '@/components/CinemaSection';
 import HowToOrder from '@/components/HowToOrder';
 import CTAWhatsApp from '@/components/CTAWhatsApp';
 import Footer from '@/components/Footer';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import IntroAnimation from '@/components/IntroAnimation';
-
 
 export default function HomePage() {
   return (
@@ -32,16 +31,16 @@ export default function HomePage() {
           {/* 3. 🎬 Jasa Editing & Digital Service */}
           <ServicesSection />
 
-          {/* 4. 🥤 Produk Minuman */}
-          <DrinksSection />
+          {/* 4. 🍔 Makanan & Minuman */}
+          <FoodDrinksSection />
 
           {/* 5. 🎟️ Promo Tiket Bioskop */}
           <CinemaSection />
 
-          {/* 5. 🛒 Cara Order (4 Langkah Tanpa Login) */}
+          {/* 6. 🛒 Cara Order (4 Langkah Tanpa Login) */}
           <HowToOrder />
 
-          {/* 6. CTA WhatsApp Bantuan */}
+          {/* 7. CTA WhatsApp Bantuan */}
           <CTAWhatsApp />
         </main>
 
@@ -52,4 +51,3 @@ export default function HomePage() {
     </div>
   );
 }
-

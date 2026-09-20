@@ -17,7 +17,7 @@ import {
   Package, 
   Video, 
   Ticket, 
-  GlassWater,
+  Utensils,
   Settings, 
   LogOut, 
   ArrowLeft, 
@@ -259,7 +259,7 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
     { id: 'products', label: 'Produk Premium', icon: Package },
     { id: 'services', label: 'Jasa Editing', icon: Video },
     { id: 'promos', label: 'Promo Bioskop', icon: Ticket },
-    { id: 'drinks', label: 'Minuman', icon: GlassWater },
+    { id: 'drinks', label: 'Makanan & Minuman', icon: Utensils },
     { id: 'settings', label: 'Pengaturan', icon: Settings },
   ];
 
