@@ -8,9 +8,29 @@ import HeroLogoStage from './intro/HeroLogoStage';
 import CommercialLightSweep from './intro/CommercialLightSweep';
 import { Film, Bot, Palette, Zap, Ticket } from 'lucide-react';
 
-export default function IntroAnimation() {
+interface IntroAnimationProps {
+  onComplete?: () => void;
+}
+
+export default function IntroAnimation({ onComplete }: IntroAnimationProps = {}) {
   // Initial state: true agar langsung aktif di frame 0 tanpa jeda atau FOC
   const [isIntroVisible, setIsIntroVisible] = useState(true);
+
+  const finishIntro = React.useCallback((reason: string) => {
+    console.log(`INTRO FINISHED (${reason})`);
+    setIsIntroVisible(false);
+
+    if (typeof document !== 'undefined') {
+      document.body.classList.remove('intro-active');
+      document.body.style.overflow = '';
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('alpin:intro-completed'));
+    }
+
+    onComplete?.();
+  }, [onComplete]);
 
   useEffect(() => {
     // Debug log saat intro dimulai
@@ -23,13 +43,7 @@ export default function IntroAnimation() {
 
     // Tepat ±7.0 detik (7000ms) luxury cinematic commercial completion
     const timer = setTimeout(() => {
-      console.log("INTRO FINISHED");
-      setIsIntroVisible(false);
-
-      if (typeof document !== 'undefined') {
-        document.body.classList.remove('intro-active');
-        document.body.style.overflow = '';
-      }
+      finishIntro('TIMER');
     }, 7000);
 
     return () => {
@@ -39,16 +53,10 @@ export default function IntroAnimation() {
         document.body.style.overflow = '';
       }
     };
-  }, []);
+  }, [finishIntro]);
 
   const handleSkip = () => {
-    console.log("INTRO FINISHED (SKIPPED)");
-    setIsIntroVisible(false);
-
-    if (typeof document !== 'undefined') {
-      document.body.classList.remove('intro-active');
-      document.body.style.overflow = '';
-    }
+    finishIntro('SKIPPED');
   };
 
   if (!isIntroVisible) return null;

@@ -43,6 +43,7 @@ import { AdminPortalProvider } from "@/context/AdminPortalContext";
 import AdminLoginModal from "@/components/admin/AdminLoginModal";
 import AdminPanelOverlay from "@/components/admin/AdminPanelOverlay";
 import FloatingAdminPill from "@/components/admin/FloatingAdminPill";
+import AudioWelcome from "@/components/AudioWelcome";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function RootLayout({
@@ -58,6 +59,7 @@ export default function RootLayout({
           <AdminLoginModal />
           <AdminPanelOverlay />
           <FloatingAdminPill />
+          <AudioWelcome />
         </AdminPortalProvider>
         <Analytics />
       </body>
