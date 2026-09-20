@@ -58,9 +58,13 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
 
   // Sync tab from props or query parameter
   useEffect(() => {
-    const tabParam = searchParams?.get('tab') as AdminTab | null;
-    if (tabParam && ['dashboard', 'products', 'services', 'promos', 'drinks', 'settings'].includes(tabParam)) {
-      setActiveTab(tabParam);
+    const rawTab = searchParams?.get('tab');
+    if (rawTab) {
+      if (['drinks', 'makanan-minuman', 'food-drinks', 'makanan', 'minuman'].includes(rawTab.toLowerCase())) {
+        setActiveTab('drinks');
+      } else if (['dashboard', 'products', 'services', 'promos', 'settings'].includes(rawTab)) {
+        setActiveTab(rawTab as AdminTab);
+      }
     } else if (initialTab) {
       setActiveTab(initialTab);
     }

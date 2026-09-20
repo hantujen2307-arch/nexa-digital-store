@@ -10,6 +10,8 @@ import Footer from '@/components/Footer';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import IntroAnimation from '@/components/IntroAnimation';
 
+export const dynamic = 'force-dynamic';
+
 export default function HomePage() {
   return (
     <div className="relative min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-cyan-500 selection:text-zinc-950">
