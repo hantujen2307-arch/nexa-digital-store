@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FoodDrink } from '@/types/database';
 import { initialFoodDrinks } from '@/data/food-drinks';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
@@ -76,6 +76,10 @@ export default function FoodDrinksTab() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // File input ref & local preview blob
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
 
   // Delete & toast
   const [deleteTarget, setDeleteTarget] = useState<FoodDrink | null>(null);
@@ -174,6 +178,13 @@ export default function FoodDrinksTab() {
     setFormPrice(''); setFormOriginalPrice(''); setFormStock('');
     setFormImageUrl(''); setFormStatus(true); setFormIsFeatured(false);
     setFormError(null);
+    if (previewBlobUrl) {
+      URL.revokeObjectURL(previewBlobUrl);
+      setPreviewBlobUrl(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const openAdd = () => { resetForm(); setIsModalOpen(true); };
@@ -185,9 +196,13 @@ export default function FoodDrinksTab() {
     setFormPrice(d.price.toString());
     setFormOriginalPrice(d.original_price ? d.original_price.toString() : '');
     setFormStock(d.stock.toString());
-    setFormImageUrl(d.image_url ?? '');
+    setFormImageUrl(d.image_url ?? (d as unknown as Record<string, unknown>).image as string ?? '');
     setFormStatus(d.status); setFormIsFeatured(d.is_featured);
     setFormError(null);
+    setPreviewBlobUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setIsModalOpen(true);
   };
 
@@ -202,13 +217,42 @@ export default function FoodDrinksTab() {
     setIsSlugManual(true);
   };
 
-  // ─── Image upload ─────────────────────────────────────────────────────────
+  // ─── Image upload & File picker trigger ───────────────────────────────────
+
+  const handleOpenPicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[FoodDrinks] Upload button clicked');
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error('[FoodDrinks] fileInputRef is null');
+    }
+  };
+
+  const handleRemoveImage = () => {
+    if (previewBlobUrl) {
+      URL.revokeObjectURL(previewBlobUrl);
+      setPreviewBlobUrl(null);
+    }
+    setFormImageUrl('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Reset nilai input agar memilih file yang sama bisa memicu event kembali
-    e.target.value = '';
-    if (!file) return;
+    // Reset nilai input agar memilih file yang sama tetap memicu event
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (!file) {
+      console.warn('[FoodDrinks] No file selected');
+      return;
+    }
+
+    console.log('[FoodDrinks] File selected:', file.name, file.type, file.size);
 
     // 1. Validasi MIME type & Ekstensi (JPG, JPEG, PNG, WEBP)
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
@@ -216,6 +260,7 @@ export default function FoodDrinksTab() {
     const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
 
     if (!allowedTypes.includes(file.type) && !allowedExts.includes(fileExt)) {
+      console.warn('[FoodDrinks] File format not allowed:', file.type, fileExt);
       setToast({
         id: Date.now().toString(),
         type: 'error',
@@ -227,6 +272,7 @@ export default function FoodDrinksTab() {
     // 2. Validasi Ukuran File (Maksimal 5 MB)
     const MAX_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
+      console.warn('[FoodDrinks] File size too large:', file.size);
       setToast({
         id: Date.now().toString(),
         type: 'error',
@@ -235,20 +281,43 @@ export default function FoodDrinksTab() {
       return;
     }
 
+    // 3. Tampilkan Instant Local Preview menggunakan URL.createObjectURL
+    try {
+      if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl);
+      }
+      const localPreview = URL.createObjectURL(file);
+      setPreviewBlobUrl(localPreview);
+      setFormImageUrl(localPreview);
+      console.log('[FoodDrinks] Local preview generated:', localPreview);
+    } catch (err) {
+      console.warn('[FoodDrinks] Failed to generate local blob preview:', err);
+    }
+
     setUploadingImage(true);
     setFormError(null);
+    console.log('[FoodDrinks] Upload started');
 
-    const { url, error } = await uploadImage(file, 'food-drink-images');
-    if (error) {
-      console.error('[FoodDrinksTab] Upload error:', error);
-      const errorMsg = `Gagal mengupload gambar: ${error.message}`;
+    try {
+      const { url, error } = await uploadImage(file, 'food-drink-images');
+      if (error) {
+        console.error('[FoodDrinks] Upload error:', error);
+        const errorMsg = `Upload gambar gagal: ${error.message}`;
+        setToast({ id: Date.now().toString(), type: 'error', text: errorMsg });
+        setFormError(errorMsg);
+      } else if (url) {
+        console.log('[FoodDrinks] Upload success:', url);
+        setFormImageUrl(url);
+        setToast({ id: Date.now().toString(), type: 'success', text: 'Gambar produk berhasil diunggah.' });
+      }
+    } catch (err: unknown) {
+      console.error('[FoodDrinks] Unexpected upload error:', err);
+      const errorMsg = `Upload gambar gagal: ${(err as Error).message || 'Terjadi kesalahan sistem'}`;
       setToast({ id: Date.now().toString(), type: 'error', text: errorMsg });
       setFormError(errorMsg);
-    } else if (url) {
-      setFormImageUrl(url);
-      setToast({ id: Date.now().toString(), type: 'success', text: 'Gambar produk berhasil diunggah.' });
+    } finally {
+      setUploadingImage(false);
     }
-    setUploadingImage(false);
   };
 
   // ─── Toggle active ────────────────────────────────────────────────────────
@@ -843,6 +912,18 @@ export default function FoodDrinksTab() {
                   <span className="text-[11px] text-zinc-500">JPG, PNG, WEBP (Maks. 5MB)</span>
                 </div>
 
+                {/* Hidden File Input dengan ref langsung ke fileInputRef */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="food-image-picker"
+                  accept="image/png,image/jpeg,image/webp,image/jpg"
+                  onChange={handleImageUpload}
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+
                 {/* Preview Box jika gambar sudah ada / diupload */}
                 {formImageUrl ? (
                   <div className="relative mb-3 p-3 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center gap-3.5 group">
@@ -862,25 +943,29 @@ export default function FoodDrinksTab() {
                           <CheckCircle className="w-3 h-3" />
                           <span>Gambar Terpasang</span>
                         </span>
+                        {uploadingImage && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-orange-400">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Mengunggah...</span>
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] text-zinc-400 truncate mt-1 max-w-[240px] sm:max-w-xs" title={formImageUrl}>
                         {formImageUrl}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
-                        <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white border border-zinc-700 cursor-pointer transition-colors">
-                          <Upload className="w-3 h-3 text-orange-400" />
-                          <span>Ganti Gambar</span>
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/jpg"
-                            onChange={handleImageUpload}
-                            disabled={uploadingImage}
-                            className="hidden"
-                          />
-                        </label>
                         <button
                           type="button"
-                          onClick={() => setFormImageUrl('')}
+                          onClick={handleOpenPicker}
+                          disabled={uploadingImage}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white border border-zinc-700 cursor-pointer transition-colors disabled:opacity-50"
+                        >
+                          <Upload className="w-3 h-3 text-orange-400" />
+                          <span>Ganti Gambar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-950/50 border border-red-900/40 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -891,17 +976,20 @@ export default function FoodDrinksTab() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <label className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 cursor-pointer transition-colors shadow-sm">
-                      <Upload className="w-4 h-4 text-orange-400" />
+                    <button
+                      type="button"
+                      id="btn-upload-food-image"
+                      onClick={handleOpenPicker}
+                      disabled={uploadingImage}
+                      className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 cursor-pointer transition-colors shadow-sm disabled:opacity-50"
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+                      ) : (
+                        <Upload className="w-4 h-4 text-orange-400" />
+                      )}
                       <span>{uploadingImage ? 'Mengupload...' : 'Pilih & Upload Gambar'}</span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/jpg"
-                        onChange={handleImageUpload}
-                        disabled={uploadingImage}
-                        className="hidden"
-                      />
-                    </label>
+                    </button>
                     {uploadingImage && (
                       <div className="flex items-center gap-2 text-xs text-orange-400">
                         <Loader2 className="w-4 h-4 animate-spin" />
