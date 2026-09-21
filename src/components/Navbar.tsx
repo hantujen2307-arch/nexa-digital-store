@@ -15,6 +15,7 @@ export default function Navbar() {
     { label: 'Jasa', href: '/#jasa' },
     { label: 'Promo', href: '/#promo' },
     { label: 'Makanan & Minuman', href: '/#makanan-minuman' },
+    { label: 'Pulsa & Token', href: '/#pulsa-token' },
     { label: 'Cara Order', href: '/#cara-order' },
   ];
 

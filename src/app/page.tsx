@@ -3,6 +3,7 @@ import Hero from '@/components/Hero';
 import ProductGrid from '@/components/ProductGrid';
 import ServicesSection from '@/components/ServicesSection';
 import FoodDrinksSection from '@/components/FoodDrinksSection';
+import PulsaTokenSection from '@/components/PulsaTokenSection';
 import CinemaSection from '@/components/CinemaSection';
 import HowToOrder from '@/components/HowToOrder';
 import CTAWhatsApp from '@/components/CTAWhatsApp';
@@ -39,7 +40,10 @@ export default function HomePage() {
           {/* 5. 🍴 Makanan & Minuman */}
           <FoodDrinksSection />
 
-          {/* 6. 🛒 Cara Order (4 Langkah Tanpa Login) */}
+          {/* 6. 📱 Pulsa & Token */}
+          <PulsaTokenSection />
+
+          {/* 7. 🛒 Cara Order (4 Langkah Tanpa Login) */}
           <HowToOrder />
 
           {/* 7. CTA WhatsApp Bantuan */}

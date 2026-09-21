@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { initialProducts, initialServices, initialCinemaPromos } from '@/data/seed-data';
 import { initialFoodDrinks } from '@/data/food-drinks';
+import { initialPulsaTokens } from '@/data/pulsa-tokens';
 import { DashboardStats } from '@/types/database';
 import { useAdminPortal, AdminTab } from '@/context/AdminPortalContext';
 import {
@@ -11,6 +12,7 @@ import {
   Video,
   Ticket,
   Utensils,
+  Smartphone,
   CheckCircle2,
   Plus,
   ArrowRight,
@@ -30,6 +32,10 @@ export default function DashboardTab() {
     totalFoodDrinks: initialFoodDrinks.length,
     activeFoodDrinks: initialFoodDrinks.filter((f) => f.status).length,
     outOfStockFoodDrinks: initialFoodDrinks.filter((f) => f.status && f.stock === 0).length,
+    totalPulsaTokens: initialPulsaTokens.length,
+    activePulsaTokens: initialPulsaTokens.filter((p) => p.is_active).length,
+    outOfStockPulsaTokens: initialPulsaTokens.filter((p) => p.is_active && p.stock === 0).length,
+    lowStockPulsaTokens: initialPulsaTokens.filter((p) => p.is_active && p.stock > 0 && p.stock <= 5).length,
   });
   const [loading, setLoading] = useState(true);
 
@@ -41,15 +47,17 @@ export default function DashboardTab() {
       }
 
       try {
-        const [prodRes, servRes, promoRes, foodRes] = await Promise.all([
+        const [prodRes, servRes, promoRes, foodRes, pulsaRes] = await Promise.all([
           supabase.from('products').select('id, active'),
           supabase.from('services').select('id', { count: 'exact' }),
           supabase.from('cinema_promos').select('id', { count: 'exact' }),
           supabase.from('food_drinks').select('id, status, stock'),
+          supabase.from('pulsa_tokens').select('id, is_active, stock'),
         ]);
 
         const products = prodRes.data || [];
         const foodDrinks = foodRes.data || [];
+        const pulsaTokens = pulsaRes.data || [];
 
         setStats({
           totalProducts: products.length,
@@ -59,6 +67,10 @@ export default function DashboardTab() {
           totalFoodDrinks: foodDrinks.length,
           activeFoodDrinks: foodDrinks.filter((f) => f.status).length,
           outOfStockFoodDrinks: foodDrinks.filter((f) => f.status && f.stock === 0).length,
+          totalPulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.length : initialPulsaTokens.length,
+          activePulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.filter((p) => p.is_active).length : initialPulsaTokens.filter((p) => p.is_active).length,
+          outOfStockPulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.filter((p) => p.is_active && p.stock === 0).length : initialPulsaTokens.filter((p) => p.is_active && p.stock === 0).length,
+          lowStockPulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.filter((p) => p.is_active && p.stock > 0 && p.stock <= 5).length : initialPulsaTokens.filter((p) => p.is_active && p.stock > 0 && p.stock <= 5).length,
         });
       } catch (err) {
         console.error('Error fetching stats:', err);
@@ -189,8 +201,47 @@ export default function DashboardTab() {
         )}
       </div>
 
+      {/* ── Pulsa & Token Stats ── */}
+      <div className="rounded-2xl bg-zinc-900/50 border border-cyan-800/30 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-zinc-800/80 flex items-center gap-2">
+          <Smartphone className="w-4 h-4 text-cyan-400" />
+          <span className="text-sm font-bold text-white">Pulsa & Token</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-zinc-800/60">
+          {[
+            { label: 'Total Produk', value: loading ? null : stats.totalPulsaTokens, color: 'text-white' },
+            { label: 'Produk Aktif', value: loading ? null : stats.activePulsaTokens, color: 'text-emerald-400' },
+            {
+              label: 'Stok Habis',
+              value: loading ? null : stats.outOfStockPulsaTokens,
+              color: (stats.outOfStockPulsaTokens || 0) > 0 ? 'text-red-400' : 'text-zinc-500',
+            },
+            {
+              label: 'Hampir Habis (≤ 5)',
+              value: loading ? null : stats.lowStockPulsaTokens,
+              color: (stats.lowStockPulsaTokens || 0) > 0 ? 'text-amber-400' : 'text-zinc-500',
+            },
+          ].map((s) => (
+            <div key={s.label} className="p-4 text-center">
+              <div className={`text-2xl font-black ${s.color}`}>
+                {s.value === null ? <Loader2 className="w-5 h-5 animate-spin text-zinc-600 mx-auto" /> : s.value}
+              </div>
+              <div className="text-[10px] text-zinc-500 mt-0.5">{s.label}</div>
+            </div>
+          ))}
+        </div>
+        {!loading && ((stats.outOfStockPulsaTokens || 0) > 0 || (stats.lowStockPulsaTokens || 0) > 0) && (
+          <div className="px-5 py-2.5 bg-amber-950/20 border-t border-amber-800/30 flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-xs text-amber-300">
+              Ada produk pulsa/token dengan stok habis atau hampir habis — perbarui dari tab Pulsa & Token.
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* ── Quick Actions ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <button
           type="button"
           onClick={() => openDashboard('products')}
@@ -256,6 +307,23 @@ export default function DashboardTab() {
           <h3 className="text-sm font-bold text-white mb-1">Kelola Makanan & Minuman</h3>
           <p className="text-xs text-zinc-400 leading-relaxed">
             Tambah, edit, dan atur stok produk makanan dan minuman yang tersedia di toko.
+          </p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => openDashboard('pulsa-token' as AdminTab)}
+          className="text-left p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-900 transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-cyan-950/40 text-cyan-400 flex items-center justify-center border border-cyan-800/50">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
+          </div>
+          <h3 className="text-sm font-bold text-white mb-1">Kelola Pulsa & Token</h3>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            Atur pulsa, kuota data, token listrik PLN, voucher game, margin harga, dan kontrol stok.
           </p>
         </button>
       </div>

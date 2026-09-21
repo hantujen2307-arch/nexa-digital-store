@@ -11,6 +11,7 @@ import ProductsTab from '@/components/admin/tabs/ProductsTab';
 import ServicesTab from '@/components/admin/tabs/ServicesTab';
 import PromosTab from '@/components/admin/tabs/PromosTab';
 import FoodDrinksTab from '@/components/admin/tabs/FoodDrinksTab';
+import PulsaTokenTab from '@/components/admin/tabs/PulsaTokenTab';
 import SettingsTab from '@/components/admin/tabs/SettingsTab';
 import { 
   LayoutDashboard, 
@@ -18,6 +19,7 @@ import {
   Video, 
   Ticket, 
   Utensils,
+  Smartphone,
   Settings, 
   LogOut, 
   ArrowLeft, 
@@ -62,6 +64,8 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
     if (rawTab) {
       if (['drinks', 'makanan-minuman', 'food-drinks', 'makanan', 'minuman'].includes(rawTab.toLowerCase())) {
         setActiveTab('drinks');
+      } else if (['pulsa-token', 'pulsa', 'token'].includes(rawTab.toLowerCase())) {
+        setActiveTab('pulsa-token');
       } else if (['dashboard', 'products', 'services', 'promos', 'settings'].includes(rawTab)) {
         setActiveTab(rawTab as AdminTab);
       }
@@ -264,6 +268,7 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
     { id: 'services', label: 'Jasa Editing', icon: Video },
     { id: 'promos', label: 'Promo Bioskop', icon: Ticket },
     { id: 'drinks', label: 'Makanan & Minuman', icon: Utensils },
+    { id: 'pulsa-token', label: 'Pulsa & Token', icon: Smartphone },
     { id: 'settings', label: 'Pengaturan', icon: Settings },
   ];
 
@@ -369,6 +374,7 @@ export default function AdminPortalView({ initialTab }: AdminPortalViewProps) {
           {activeTab === 'services' && <ServicesTab />}
           {activeTab === 'promos' && <PromosTab />}
           {(activeTab === 'drinks' || activeTab === 'food-drinks') && <FoodDrinksTab />}
+          {activeTab === 'pulsa-token' && <PulsaTokenTab />}
           {activeTab === 'settings' && <SettingsTab />}
         </div>
       </main>
