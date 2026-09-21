@@ -241,15 +241,22 @@ export default function PulsaTokenTab() {
     }
   };
 
+  const closeModal = () => {
+    if (submitting) return;
+    setIsModalOpen(false);
+    resetForm();
+  };
+
   const openAdd = () => {
     resetForm();
     setIsModalOpen(true);
   };
 
   const openEdit = (d: PulsaToken) => {
+    resetForm();
     setEditingId(d.id);
     setFormName(d.name);
-    setFormSlug(d.slug);
+    setFormSlug(d.slug || toSlug(d.name));
     setIsSlugManual(true);
     setFormCategory(d.category || 'Pulsa');
     if (POPULAR_PROVIDERS.includes(d.provider)) {
@@ -275,12 +282,16 @@ export default function PulsaTokenTab() {
 
   const handleNameChange = (val: string) => {
     setFormName(val);
-    if (!isSlugManual) setFormSlug(toSlug(val));
+    // Hanya auto-generate slug jika mode tambah produk baru DAN user belum mengetik slug manual
+    if (!editingId && !isSlugManual) {
+      setFormSlug(toSlug(val));
+    }
   };
 
   const handleSlugChange = (val: string) => {
-    setFormSlug(toSlug(val));
-    setIsSlugManual(true);
+    const cleaned = val.toLowerCase().replace(/\s+/g, '-');
+    setFormSlug(cleaned);
+    setIsSlugManual(cleaned.trim().length > 0);
   };
 
   // ─── Upload Gambar (Opsional) ─────────────────────────────────────────────
@@ -503,7 +514,7 @@ export default function PulsaTokenTab() {
 
     const payload = {
       name,
-      slug,
+      slug: (formSlug.trim() || toSlug(name)),
       category: formCategory,
       provider: finalProvider,
       nominal,
@@ -514,6 +525,10 @@ export default function PulsaTokenTab() {
       is_featured: formIsFeatured,
       updated_at: new Date().toISOString(),
     };
+
+    console.log('[PulsaToken] form name:', formName);
+    console.log('[PulsaToken] form slug:', formSlug);
+    console.log('[PulsaToken] payload.slug:', payload.slug);
 
     const isRealUUID = isValidUUID(editingId);
 
@@ -538,6 +553,10 @@ export default function PulsaTokenTab() {
         setToast({ id: Date.now().toString(), type: 'success', text: 'Produk berhasil disimpan.' });
       } else {
         // INSERT: untuk produk baru ATAU edit dari data seed/fallback (ID non-UUID seperti pt-seed-1)
+        console.log('[PulsaToken] form name:', formName);
+        console.log('[PulsaToken] form slug:', formSlug);
+        console.log('[PulsaToken] payload.slug:', payload.slug);
+
         let newId = `pt-${Date.now()}`;
         if (isSupabaseConfigured()) {
           const { data, error } = await supabase
@@ -570,13 +589,23 @@ export default function PulsaTokenTab() {
         setToast({ id: Date.now().toString(), type: 'success', text: 'Produk berhasil disimpan.' });
       }
 
-      setIsModalOpen(false);
-      resetForm();
+      closeModal();
       triggerDataRefresh();
     } catch (err: unknown) {
       const msg = (err as Error).message || 'Terjadi kesalahan saat menyimpan produk.';
-      setFormError(msg);
-      setToast({ id: Date.now().toString(), type: 'error', text: msg });
+      if (
+        msg.includes('duplicate key') ||
+        msg.includes('unique constraint') ||
+        msg.includes('pulsa_tokens_slug_key') ||
+        msg.includes('23505')
+      ) {
+        const errorText = `Slug URL "${payload.slug}" sudah digunakan oleh produk lain di database. Silakan ubah "Slug URL" dengan teks yang berbeda.`;
+        setFormError(errorText);
+        setToast({ id: Date.now().toString(), type: 'error', text: errorText });
+      } else {
+        setFormError(msg);
+        setToast({ id: Date.now().toString(), type: 'error', text: msg });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1049,7 +1078,7 @@ export default function PulsaTokenTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div
             className="fixed inset-0"
-            onClick={submitting ? undefined : () => setIsModalOpen(false)}
+            onClick={closeModal}
           />
 
           <div className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto space-y-4">
@@ -1062,7 +1091,7 @@ export default function PulsaTokenTab() {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeModal}
                 className="text-zinc-500 hover:text-white p-1 rounded-lg"
               >
                 <X className="w-4 h-4" />
@@ -1294,7 +1323,7 @@ export default function PulsaTokenTab() {
                 <button
                   type="button"
                   disabled={submitting}
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeModal}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800"
                 >
                   Batal

@@ -6,3 +6,6 @@ export const STORE_DESCRIPTION = "Temukan aplikasi premium, jasa editing, dan be
 
 // Ganti nomor WhatsApp admin di sini (format 628xxxxxxxxxx tanpa tanda plus atau spasi)
 export const WHATSAPP_NUMBER = "6285709918896";
+
+// Konfigurasi jam operasional (08:00 - 22:00 WIB)
+export { STORE_HOURS } from '@/lib/storeHours';
