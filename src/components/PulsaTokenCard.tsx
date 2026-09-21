@@ -67,9 +67,9 @@ export default function PulsaTokenCard({ item }: PulsaTokenCardProps) {
         {/* Gambar Produk / Visual Icon */}
         <div className="relative mb-3.5">
           <div className="w-full h-36 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 flex items-center justify-center">
-            {item.image_url ? (
+            {(item.image || item.image_url) ? (
               <img
-                src={item.image_url}
+                src={(item.image || item.image_url)!}
                 alt={item.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => {

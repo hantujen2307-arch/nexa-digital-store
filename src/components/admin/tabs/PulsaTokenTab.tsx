@@ -59,6 +59,12 @@ function toSlug(text: string): string {
     .replace(/-+/g, '-');
 }
 
+/** Validasi format UUID untuk Supabase */
+export function isValidUUID(val?: string | null): boolean {
+  if (!val) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+}
+
 type SortField = 'created_at' | 'price' | 'nominal' | 'name';
 type SortDir = 'asc' | 'desc';
 
@@ -256,7 +262,7 @@ export default function PulsaTokenTab() {
     setFormNominal(d.nominal ? d.nominal.toString() : '');
     setFormPrice(d.price ? d.price.toString() : '');
     setFormDescription(d.description || '');
-    setFormImageUrl(d.image_url || '');
+    setFormImageUrl(d.image || d.image_url || '');
     setFormIsActive(d.is_active);
     setFormIsFeatured(d.is_featured);
     setFormError(null);
@@ -366,15 +372,39 @@ export default function PulsaTokenTab() {
     setItems((prev) => prev.map((x) => (x.id === d.id ? { ...x, is_active: newActive } : x)));
 
     if (isSupabaseConfigured()) {
-      const { error } = await supabase
-        .from('pulsa_tokens')
-        .update({ is_active: newActive, updated_at: new Date().toISOString() })
-        .eq('id', d.id);
-      if (error) {
-        console.error('[PulsaTokenTab] Gagal ubah status:', error);
-        setToast({ id: Date.now().toString(), type: 'error', text: `Gagal ubah status: ${error.message}` });
-        loadItems();
-        return;
+      if (isValidUUID(d.id)) {
+        const { error } = await supabase
+          .from('pulsa_tokens')
+          .update({ is_active: newActive, updated_at: new Date().toISOString() })
+          .eq('id', d.id);
+        if (error) {
+          console.error('[PulsaTokenTab] Gagal ubah status:', error);
+          setToast({ id: Date.now().toString(), type: 'error', text: `Gagal ubah status: ${error.message}` });
+          loadItems();
+          return;
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('pulsa_tokens')
+          .insert({
+            name: d.name,
+            slug: d.slug,
+            category: d.category,
+            provider: d.provider,
+            nominal: d.nominal,
+            price: d.price,
+            description: d.description || '',
+            image: d.image || d.image_url || null,
+            is_active: newActive,
+            is_featured: d.is_featured,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        if (!error && data?.id) {
+          setItems((prev) => prev.map((x) => (x.id === d.id ? { ...x, id: data.id, is_active: newActive } : x)));
+        }
       }
     }
     setToast({
@@ -392,15 +422,39 @@ export default function PulsaTokenTab() {
     setItems((prev) => prev.map((x) => (x.id === d.id ? { ...x, is_featured: newFeatured } : x)));
 
     if (isSupabaseConfigured()) {
-      const { error } = await supabase
-        .from('pulsa_tokens')
-        .update({ is_featured: newFeatured, updated_at: new Date().toISOString() })
-        .eq('id', d.id);
-      if (error) {
-        console.error('[PulsaTokenTab] Gagal ubah unggulan:', error);
-        setToast({ id: Date.now().toString(), type: 'error', text: `Gagal ubah status unggulan: ${error.message}` });
-        loadItems();
-        return;
+      if (isValidUUID(d.id)) {
+        const { error } = await supabase
+          .from('pulsa_tokens')
+          .update({ is_featured: newFeatured, updated_at: new Date().toISOString() })
+          .eq('id', d.id);
+        if (error) {
+          console.error('[PulsaTokenTab] Gagal ubah unggulan:', error);
+          setToast({ id: Date.now().toString(), type: 'error', text: `Gagal ubah status unggulan: ${error.message}` });
+          loadItems();
+          return;
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('pulsa_tokens')
+          .insert({
+            name: d.name,
+            slug: d.slug,
+            category: d.category,
+            provider: d.provider,
+            nominal: d.nominal,
+            price: d.price,
+            description: d.description || '',
+            image: d.image || d.image_url || null,
+            is_active: d.is_active,
+            is_featured: newFeatured,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        if (!error && data?.id) {
+          setItems((prev) => prev.map((x) => (x.id === d.id ? { ...x, id: data.id, is_featured: newFeatured } : x)));
+        }
       }
     }
     setToast({
@@ -455,14 +509,17 @@ export default function PulsaTokenTab() {
       nominal,
       price,
       description: formDescription.trim(),
-      image_url: formImageUrl.trim() || null,
+      image: formImageUrl.trim() || null,
       is_active: formIsActive,
       is_featured: formIsFeatured,
       updated_at: new Date().toISOString(),
     };
 
+    const isRealUUID = isValidUUID(editingId);
+
     try {
-      if (editingId) {
+      if (editingId && isRealUUID) {
+        // UPDATE record database berdasarkan UUID valid
         if (isSupabaseConfigured()) {
           const { data, error } = await supabase
             .from('pulsa_tokens')
@@ -480,6 +537,7 @@ export default function PulsaTokenTab() {
         setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...payload } : item)));
         setToast({ id: Date.now().toString(), type: 'success', text: 'Produk berhasil disimpan.' });
       } else {
+        // INSERT: untuk produk baru ATAU edit dari data seed/fallback (ID non-UUID seperti pt-seed-1)
         let newId = `pt-${Date.now()}`;
         if (isSupabaseConfigured()) {
           const { data, error } = await supabase
@@ -502,7 +560,13 @@ export default function PulsaTokenTab() {
           id: newId,
           created_at: new Date().toISOString(),
         };
-        setItems((prev) => [newItem, ...prev]);
+
+        if (editingId && !isRealUUID) {
+          // Gantikan item seed non-UUID (seperti pt-seed-1) dengan item baru ber-UUID dari database
+          setItems((prev) => prev.map((item) => (item.id === editingId ? newItem : item)));
+        } else {
+          setItems((prev) => [newItem, ...prev]);
+        }
         setToast({ id: Date.now().toString(), type: 'success', text: 'Produk berhasil disimpan.' });
       }
 
@@ -525,7 +589,7 @@ export default function PulsaTokenTab() {
     setIsDeleting(true);
 
     try {
-      if (isSupabaseConfigured()) {
+      if (isSupabaseConfigured() && isValidUUID(deleteTarget.id)) {
         const { error } = await supabase.from('pulsa_tokens').delete().eq('id', deleteTarget.id);
         if (error) {
           console.error('[PulsaTokenTab] Gagal hapus:', error);
@@ -791,9 +855,9 @@ export default function PulsaTokenTab() {
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 shrink-0 flex items-center justify-center">
-                            {item.image_url ? (
+                            {(item.image || item.image_url) ? (
                               <img
-                                src={item.image_url}
+                                src={(item.image || item.image_url)!}
                                 alt={item.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -906,9 +970,9 @@ export default function PulsaTokenTab() {
                 <div key={item.id} className="p-4 space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 shrink-0 flex items-center justify-center">
-                      {item.image_url ? (
+                      {(item.image || item.image_url) ? (
                         <img
-                          src={item.image_url}
+                          src={(item.image || item.image_url)!}
                           alt={item.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {

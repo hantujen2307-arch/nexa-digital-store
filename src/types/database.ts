@@ -111,7 +111,8 @@ export interface PulsaToken {
   nominal: number;            // Nominal (Rp)
   price: number;              // Harga jual (Rp)
   description: string;        // Deskripsi produk
-  image_url?: string | null;  // URL gambar (opsional)
+  image?: string | null;      // Kolom 'image' di tabel pulsa_tokens Supabase
+  image_url?: string | null;  // URL gambar (opsional / backwards compatibility)
   is_active: boolean;         // true = aktif & tampil di toko
   is_featured: boolean;       // true = produk unggulan
   created_at?: string;
