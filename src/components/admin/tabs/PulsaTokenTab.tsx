@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PulsaToken } from '@/types/database';
 import { initialPulsaTokens } from '@/data/pulsa-tokens';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured, getSupabaseUrl } from '@/lib/supabase/client';
 import { uploadImage } from '@/lib/supabase/storage';
 import { formatRupiah } from '@/lib/whatsapp';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
@@ -135,6 +135,13 @@ export default function PulsaTokenTab() {
   };
 
   useEffect(() => {
+    try {
+      const url = getSupabaseUrl();
+      const origin = url ? new URL(url).origin : url;
+      console.log('[PulsaToken] Supabase URL:', origin);
+    } catch {
+      console.log('[PulsaToken] Supabase URL:', getSupabaseUrl());
+    }
     loadItems();
   }, []);
 
@@ -438,6 +445,7 @@ export default function PulsaTokenTab() {
     }
 
     setSubmitting(true);
+    console.log('[PulsaToken] INSERT START');
 
     const payload = {
       name,
@@ -456,15 +464,18 @@ export default function PulsaTokenTab() {
     try {
       if (editingId) {
         if (isSupabaseConfigured()) {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('pulsa_tokens')
             .update(payload)
-            .eq('id', editingId);
+            .eq('id', editingId)
+            .select();
 
           if (error) {
+            console.error('[PulsaToken] INSERT ERROR', { message: error.message, code: error.code });
             console.error('[PulsaTokenTab] Gagal update pulsa_tokens:', error);
             throw new Error(`Terjadi kesalahan saat menyimpan produk: ${error.message}`);
           }
+          console.log('[PulsaToken] INSERT RESULT', data);
         }
         setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...payload } : item)));
         setToast({ id: Date.now().toString(), type: 'success', text: 'Produk berhasil disimpan.' });
@@ -478,9 +489,11 @@ export default function PulsaTokenTab() {
             .single();
 
           if (error) {
+            console.error('[PulsaToken] INSERT ERROR', { message: error.message, code: error.code });
             console.error('[PulsaTokenTab] Gagal insert pulsa_tokens:', error);
             throw new Error(`Terjadi kesalahan saat menyimpan produk: ${error.message}`);
           }
+          console.log('[PulsaToken] INSERT RESULT', data);
           if (data?.id) newId = data.id;
         }
 
