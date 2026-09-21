@@ -66,8 +66,6 @@ export interface DashboardStats {
   outOfStockFoodDrinks: number;
   totalPulsaTokens?: number;
   activePulsaTokens?: number;
-  outOfStockPulsaTokens?: number;
-  lowStockPulsaTokens?: number;
 }
 
 export interface StoreSettings {
@@ -101,32 +99,22 @@ export interface FoodDrink {
 }
 
 /**
- * PulsaTokenType — jenis produk Pulsa & Token
- */
-export type PulsaTokenType = 'pulsa' | 'data' | 'token_pln' | 'voucher_game' | 'ewallet' | string;
-
-/**
- * PulsaToken — model lengkap tabel `pulsa_tokens` (digunakan di Admin)
+ * PulsaToken — model produk Pulsa & Token (Katalog sederhana seperti FoodDrink)
+ * Disimpan di tabel `pulsa_tokens` di Supabase.
  */
 export interface PulsaToken {
   id: string;
   name: string;
   slug: string;
-  type: PulsaTokenType;
-  provider: string;
-  nominal: number;
-  cost_price: number;        // Harga Modal (hanya untuk admin)
-  selling_price: number;     // Harga Jual
-  description: string;
-  stock: number;
-  is_active: boolean;
-  is_featured: boolean;
+  category: string;           // 'Pulsa' | 'Paket Data' | 'Token PLN' | 'Voucher Game' | 'E-Wallet'
+  provider: string;           // 'Telkomsel', 'Indosat', 'XL', 'PLN', 'DANA', dll.
+  nominal: number;            // Nominal (Rp)
+  price: number;              // Harga jual (Rp)
+  description: string;        // Deskripsi produk
+  image_url?: string | null;  // URL gambar (opsional)
+  is_active: boolean;         // true = aktif & tampil di toko
+  is_featured: boolean;       // true = produk unggulan
   created_at?: string;
   updated_at?: string;
 }
-
-/**
- * PulsaTokenPublic — representasi publik (cost_price dihilangkan)
- */
-export type PulsaTokenPublic = Omit<PulsaToken, 'cost_price'>;
 

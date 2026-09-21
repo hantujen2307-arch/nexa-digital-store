@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { PulsaToken, PulsaTokenType } from '@/types/database';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { PulsaToken } from '@/types/database';
 import { initialPulsaTokens } from '@/data/pulsa-tokens';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { uploadImage } from '@/lib/supabase/storage';
 import { formatRupiah } from '@/lib/whatsapp';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import Toast, { ToastMessage } from '@/components/admin/Toast';
@@ -20,26 +21,18 @@ import {
   XCircle,
   Search,
   Star,
-  StarOff,
   ArrowUpDown,
+  Upload,
+  Image as ImageIcon,
   Zap,
-  TrendingUp,
-  AlertTriangle,
-  Flame,
-  CreditCard,
-  Gamepad2,
   Wifi,
+  Gamepad2,
+  CreditCard,
 } from 'lucide-react';
 
-// ─── Constants & Type Options ───────────────────────────────────────────────
+// ─── Kategori & Provider Konstan ──────────────────────────────────────────
 
-export const PULSA_TYPE_OPTIONS: { value: PulsaTokenType; label: string; icon: React.ElementType }[] = [
-  { value: 'pulsa', label: 'Pulsa', icon: Smartphone },
-  { value: 'data', label: 'Paket Data', icon: Wifi },
-  { value: 'token_pln', label: 'Token PLN', icon: Zap },
-  { value: 'voucher_game', label: 'Voucher Game', icon: Gamepad2 },
-  { value: 'ewallet', label: 'E-Wallet', icon: CreditCard },
-];
+export const PULSA_CATEGORIES = ['Pulsa', 'Paket Data', 'Token PLN', 'Voucher Game', 'E-Wallet'];
 
 export const POPULAR_PROVIDERS = [
   'Telkomsel',
@@ -66,7 +59,7 @@ function toSlug(text: string): string {
     .replace(/-+/g, '-');
 }
 
-type SortField = 'created_at' | 'selling_price' | 'nominal' | 'margin' | 'stock' | 'name';
+type SortField = 'created_at' | 'price' | 'nominal' | 'name';
 type SortDir = 'asc' | 'desc';
 
 export default function PulsaTokenTab() {
@@ -78,7 +71,7 @@ export default function PulsaTokenTab() {
   // Search, filter, sort
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [providerFilter, setProviderFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -89,18 +82,22 @@ export default function PulsaTokenTab() {
   const [formName, setFormName] = useState('');
   const [formSlug, setFormSlug] = useState('');
   const [isSlugManual, setIsSlugManual] = useState(false);
-  const [formType, setFormType] = useState<PulsaTokenType>('pulsa');
+  const [formCategory, setFormCategory] = useState('Pulsa');
   const [formProvider, setFormProvider] = useState('Telkomsel');
   const [customProviderInput, setCustomProviderInput] = useState('');
   const [formNominal, setFormNominal] = useState('');
-  const [formCostPrice, setFormCostPrice] = useState('');
-  const [formSellingPrice, setFormSellingPrice] = useState('');
+  const [formPrice, setFormPrice] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formStock, setFormStock] = useState('999');
+  const [formImageUrl, setFormImageUrl] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
   const [formIsFeatured, setFormIsFeatured] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // File input ref & local preview blob
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
 
   // Delete & toast
   const [deleteTarget, setDeleteTarget] = useState<PulsaToken | null>(null);
@@ -122,7 +119,7 @@ export default function PulsaTokenTab() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.warn('[PulsaTokenTab] Tabel pulsa_tokens belum ada atau error, menggunakan data fallback:', error.message);
+        console.warn('[PulsaTokenTab] Tabel pulsa_tokens belum ada atau error, menggunakan fallback:', error.message);
         setItems(initialPulsaTokens);
       } else if (data && data.length > 0) {
         setItems(data as PulsaToken[]);
@@ -150,7 +147,7 @@ export default function PulsaTokenTab() {
         !q ||
         d.name.toLowerCase().includes(q) ||
         d.provider.toLowerCase().includes(q) ||
-        d.type.toLowerCase().includes(q) ||
+        d.category.toLowerCase().includes(q) ||
         d.slug.toLowerCase().includes(q) ||
         (d.description && d.description.toLowerCase().includes(q));
 
@@ -159,28 +156,23 @@ export default function PulsaTokenTab() {
         (statusFilter === 'active' && d.is_active) ||
         (statusFilter === 'inactive' && !d.is_active);
 
-      const matchType = typeFilter === 'all' || d.type === typeFilter;
+      const matchCategory = categoryFilter === 'all' || d.category === categoryFilter;
       const matchProvider = providerFilter === 'all' || d.provider === providerFilter;
 
-      return matchSearch && matchStatus && matchType && matchProvider;
+      return matchSearch && matchStatus && matchCategory && matchProvider;
     });
 
     list = [...list].sort((a, b) => {
       let cmp = 0;
-      if (sortField === 'selling_price') cmp = a.selling_price - b.selling_price;
+      if (sortField === 'price') cmp = a.price - b.price;
       else if (sortField === 'nominal') cmp = a.nominal - b.nominal;
-      else if (sortField === 'margin') {
-        const marginA = a.selling_price - a.cost_price;
-        const marginB = b.selling_price - b.cost_price;
-        cmp = marginA - marginB;
-      } else if (sortField === 'stock') cmp = a.stock - b.stock;
       else if (sortField === 'name') cmp = a.name.localeCompare(b.name);
       else cmp = new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime();
       return sortDir === 'asc' ? cmp : -cmp;
     });
 
     return list;
-  }, [items, searchQuery, statusFilter, typeFilter, providerFilter, sortField, sortDir]);
+  }, [items, searchQuery, statusFilter, categoryFilter, providerFilter, sortField, sortDir]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -196,14 +188,8 @@ export default function PulsaTokenTab() {
     const total = items.length;
     const active = items.filter((d) => d.is_active).length;
     const inactive = items.filter((d) => !d.is_active).length;
-    const outOfStock = items.filter((d) => d.is_active && d.stock === 0).length;
-    const lowStock = items.filter((d) => d.is_active && d.stock > 0 && d.stock <= 5).length;
-    // Total margin potensi dari seluruh produk aktif
-    const totalMargin = items
-      .filter((d) => d.is_active)
-      .reduce((sum, d) => sum + (d.selling_price - d.cost_price), 0);
-
-    return { total, active, inactive, outOfStock, lowStock, totalMargin };
+    const featured = items.filter((d) => d.is_featured).length;
+    return { total, active, inactive, featured };
   }, [items]);
 
   // ─── Unique providers ─────────────────────────────────────────────────────
@@ -216,24 +202,30 @@ export default function PulsaTokenTab() {
     return Array.from(set).sort();
   }, [items]);
 
-  // ─── Modal form helpers ───────────────────────────────────────────────────
+  // ─── Form Helpers ─────────────────────────────────────────────────────────
 
   const resetForm = () => {
     setEditingId(null);
     setFormName('');
     setFormSlug('');
     setIsSlugManual(false);
-    setFormType('pulsa');
+    setFormCategory('Pulsa');
     setFormProvider('Telkomsel');
     setCustomProviderInput('');
     setFormNominal('');
-    setFormCostPrice('');
-    setFormSellingPrice('');
+    setFormPrice('');
     setFormDescription('');
-    setFormStock('999');
+    setFormImageUrl('');
     setFormIsActive(true);
     setFormIsFeatured(false);
     setFormError(null);
+    if (previewBlobUrl) {
+      URL.revokeObjectURL(previewBlobUrl);
+      setPreviewBlobUrl(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const openAdd = () => {
@@ -246,7 +238,7 @@ export default function PulsaTokenTab() {
     setFormName(d.name);
     setFormSlug(d.slug);
     setIsSlugManual(true);
-    setFormType(d.type);
+    setFormCategory(d.category || 'Pulsa');
     if (POPULAR_PROVIDERS.includes(d.provider)) {
       setFormProvider(d.provider);
       setCustomProviderInput('');
@@ -254,14 +246,17 @@ export default function PulsaTokenTab() {
       setFormProvider('Lainnya');
       setCustomProviderInput(d.provider);
     }
-    setFormNominal(d.nominal.toString());
-    setFormCostPrice(d.cost_price.toString());
-    setFormSellingPrice(d.selling_price.toString());
+    setFormNominal(d.nominal ? d.nominal.toString() : '');
+    setFormPrice(d.price ? d.price.toString() : '');
     setFormDescription(d.description || '');
-    setFormStock(d.stock.toString());
+    setFormImageUrl(d.image_url || '');
     setFormIsActive(d.is_active);
     setFormIsFeatured(d.is_featured);
     setFormError(null);
+    setPreviewBlobUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setIsModalOpen(true);
   };
 
@@ -275,12 +270,89 @@ export default function PulsaTokenTab() {
     setIsSlugManual(true);
   };
 
-  // Kalkulasi Margin live di Form
-  const currentCost = parseFloat(formCostPrice) || 0;
-  const currentSelling = parseFloat(formSellingPrice) || 0;
-  const currentMargin = currentSelling - currentCost;
+  // ─── Upload Gambar (Opsional) ─────────────────────────────────────────────
 
-  // ─── Toggle active ────────────────────────────────────────────────────────
+  const handleOpenPicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRemoveImage = () => {
+    if (previewBlobUrl) {
+      URL.revokeObjectURL(previewBlobUrl);
+      setPreviewBlobUrl(null);
+    }
+    setFormImageUrl('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (!file) return;
+
+    // Validasi tipe file
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        text: 'Format file tidak didukung. Harap pilih gambar JPG, PNG, atau WEBP.',
+      });
+      return;
+    }
+
+    // Validasi ukuran (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        text: 'Ukuran gambar terlalu besar. Maksimal 5 MB.',
+      });
+      return;
+    }
+
+    try {
+      if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl);
+      }
+      const localPreview = URL.createObjectURL(file);
+      setPreviewBlobUrl(localPreview);
+      setFormImageUrl(localPreview);
+    } catch (err) {
+      console.warn('[PulsaTokenTab] Gagal generate blob preview:', err);
+    }
+
+    setUploadingImage(true);
+    setFormError(null);
+
+    try {
+      const { url, error } = await uploadImage(file, 'pulsa-token-images');
+      if (error) {
+        setToast({ id: Date.now().toString(), type: 'error', text: `Upload gambar gagal: ${error.message}` });
+      } else if (url) {
+        setFormImageUrl(url);
+        setToast({ id: Date.now().toString(), type: 'success', text: 'Gambar produk berhasil diunggah.' });
+      }
+    } catch (err: unknown) {
+      console.error('[PulsaTokenTab] Upload error:', err);
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        text: `Upload gambar gagal: ${(err as Error).message || 'Terjadi kesalahan'}`,
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // ─── Toggle Aktif / Nonaktif ──────────────────────────────────────────────
 
   const handleToggleActive = async (d: PulsaToken) => {
     const newActive = !d.is_active;
@@ -292,7 +364,7 @@ export default function PulsaTokenTab() {
         .update({ is_active: newActive, updated_at: new Date().toISOString() })
         .eq('id', d.id);
       if (error) {
-        console.error('[PulsaTokenTab] Gagal ubah status aktif:', error);
+        console.error('[PulsaTokenTab] Gagal ubah status:', error);
         setToast({ id: Date.now().toString(), type: 'error', text: `Gagal ubah status: ${error.message}` });
         loadItems();
         return;
@@ -306,7 +378,7 @@ export default function PulsaTokenTab() {
     triggerDataRefresh();
   };
 
-  // ─── Toggle featured ──────────────────────────────────────────────────────
+  // ─── Toggle Featured ──────────────────────────────────────────────────────
 
   const handleToggleFeatured = async (d: PulsaToken) => {
     const newFeatured = !d.is_featured;
@@ -318,7 +390,7 @@ export default function PulsaTokenTab() {
         .update({ is_featured: newFeatured, updated_at: new Date().toISOString() })
         .eq('id', d.id);
       if (error) {
-        console.error('[PulsaTokenTab] Gagal ubah featured:', error);
+        console.error('[PulsaTokenTab] Gagal ubah unggulan:', error);
         setToast({ id: Date.now().toString(), type: 'error', text: `Gagal ubah status unggulan: ${error.message}` });
         loadItems();
         return;
@@ -332,7 +404,7 @@ export default function PulsaTokenTab() {
     triggerDataRefresh();
   };
 
-  // ─── Submit Form (Add / Edit) ─────────────────────────────────────────────
+  // ─── Submit Form (Tambah / Edit) ──────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -342,9 +414,7 @@ export default function PulsaTokenTab() {
     const slug = (formSlug.trim() || toSlug(name)).trim();
     const finalProvider = formProvider === 'Lainnya' ? customProviderInput.trim() : formProvider;
     const nominal = parseFloat(formNominal);
-    const costPrice = parseFloat(formCostPrice);
-    const sellingPrice = parseFloat(formSellingPrice);
-    const stock = parseInt(formStock, 10);
+    const price = parseFloat(formPrice);
 
     if (!name) {
       setFormError('Nama produk wajib diisi.');
@@ -362,16 +432,8 @@ export default function PulsaTokenTab() {
       setFormError('Nominal harus berupa angka valid (>= 0).');
       return;
     }
-    if (isNaN(costPrice) || costPrice < 0) {
-      setFormError('Harga modal harus berupa angka valid (>= 0).');
-      return;
-    }
-    if (isNaN(sellingPrice) || sellingPrice < 0) {
-      setFormError('Harga jual harus berupa angka valid (>= 0).');
-      return;
-    }
-    if (isNaN(stock) || stock < 0) {
-      setFormError('Stok harus berupa bilangan bulat valid (>= 0).');
+    if (isNaN(price) || price < 0) {
+      setFormError('Harga harus berupa angka valid (>= 0).');
       return;
     }
 
@@ -380,13 +442,12 @@ export default function PulsaTokenTab() {
     const payload = {
       name,
       slug,
-      type: formType,
+      category: formCategory,
       provider: finalProvider,
       nominal,
-      cost_price: costPrice,
-      selling_price: sellingPrice,
+      price,
       description: formDescription.trim(),
-      stock,
+      image_url: formImageUrl.trim() || null,
       is_active: formIsActive,
       is_featured: formIsFeatured,
       updated_at: new Date().toISOString(),
@@ -394,7 +455,6 @@ export default function PulsaTokenTab() {
 
     try {
       if (editingId) {
-        // UPDATE
         if (isSupabaseConfigured()) {
           const { error } = await supabase
             .from('pulsa_tokens')
@@ -402,14 +462,13 @@ export default function PulsaTokenTab() {
             .eq('id', editingId);
 
           if (error) {
-            console.error('[PulsaTokenTab] Gagal update pulsa_token:', error);
+            console.error('[PulsaTokenTab] Gagal update pulsa_tokens:', error);
             throw new Error(`Terjadi kesalahan saat menyimpan produk: ${error.message}`);
           }
         }
         setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...payload } : item)));
         setToast({ id: Date.now().toString(), type: 'success', text: 'Produk berhasil disimpan.' });
       } else {
-        // INSERT
         let newId = `pt-${Date.now()}`;
         if (isSupabaseConfigured()) {
           const { data, error } = await supabase
@@ -419,7 +478,7 @@ export default function PulsaTokenTab() {
             .single();
 
           if (error) {
-            console.error('[PulsaTokenTab] Gagal insert pulsa_token:', error);
+            console.error('[PulsaTokenTab] Gagal insert pulsa_tokens:', error);
             throw new Error(`Terjadi kesalahan saat menyimpan produk: ${error.message}`);
           }
           if (data?.id) newId = data.id;
@@ -456,7 +515,7 @@ export default function PulsaTokenTab() {
       if (isSupabaseConfigured()) {
         const { error } = await supabase.from('pulsa_tokens').delete().eq('id', deleteTarget.id);
         if (error) {
-          console.error('[PulsaTokenTab] Gagal hapus produk:', error);
+          console.error('[PulsaTokenTab] Gagal hapus:', error);
           throw new Error(error.message);
         }
       }
@@ -465,7 +524,7 @@ export default function PulsaTokenTab() {
       setDeleteTarget(null);
       triggerDataRefresh();
     } catch (err: unknown) {
-      console.error('[PulsaTokenTab] Error delete pulsa_token:', err);
+      console.error('[PulsaTokenTab] Delete error:', err);
       setToast({
         id: Date.now().toString(),
         type: 'error',
@@ -473,6 +532,24 @@ export default function PulsaTokenTab() {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Helper Icon berdasarkan kategori
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'Pulsa':
+        return <Smartphone className="w-3.5 h-3.5 text-cyan-400" />;
+      case 'Paket Data':
+        return <Wifi className="w-3.5 h-3.5 text-blue-400" />;
+      case 'Token PLN':
+        return <Zap className="w-3.5 h-3.5 text-amber-400" />;
+      case 'Voucher Game':
+        return <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />;
+      case 'E-Wallet':
+        return <CreditCard className="w-3.5 h-3.5 text-emerald-400" />;
+      default:
+        return <Smartphone className="w-3.5 h-3.5 text-cyan-400" />;
     }
   };
 
@@ -493,6 +570,15 @@ export default function PulsaTokenTab() {
         onCancel={() => setDeleteTarget(null)}
       />
 
+      {/* Hidden File Input untuk Upload Gambar */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/jpg"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -501,7 +587,7 @@ export default function PulsaTokenTab() {
             <span>Pulsa & Token</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Kelola katalog pulsa, kuota data, token listrik PLN, voucher game, e-wallet, dan pantau margin keuntungan.
+            Kelola katalog produk pulsa, kuota paket data, token listrik PLN, voucher game, dan e-wallet.
           </p>
         </div>
 
@@ -517,41 +603,30 @@ export default function PulsaTokenTab() {
       </div>
 
       {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total Produk', value: stats.total, color: 'text-white', bg: 'bg-zinc-900/60 border-zinc-800' },
           { label: 'Produk Aktif', value: stats.active, color: 'text-emerald-400', bg: 'bg-emerald-950/20 border-emerald-800/30' },
           { label: 'Produk Nonaktif', value: stats.inactive, color: 'text-zinc-400', bg: 'bg-zinc-900/40 border-zinc-800/40' },
-          {
-            label: 'Total Margin (Aktif)',
-            value: formatRupiah(stats.totalMargin),
-            color: 'text-cyan-400',
-            bg: 'bg-cyan-950/20 border-cyan-800/30',
-          },
-          {
-            label: 'Hampir Habis (≤ 5)',
-            value: stats.lowStock,
-            color: stats.lowStock > 0 ? 'text-amber-400' : 'text-zinc-500',
-            bg: stats.lowStock > 0 ? 'bg-amber-950/30 border-amber-800/40' : 'bg-zinc-900/40 border-zinc-800/40',
-          },
+          { label: 'Produk Unggulan', value: stats.featured, color: 'text-amber-400', bg: 'bg-amber-950/20 border-amber-800/30' },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl border p-3 ${s.bg}`}>
-            <div className={`text-xl sm:text-2xl font-black ${s.color} truncate`}>{s.value}</div>
+            <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
             <div className="text-[10px] text-zinc-500 mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Search & Filters ── */}
+      {/* ── Search & Filter ── */}
       <div className="space-y-3">
-        {/* Row 1: Search input */}
+        {/* Row 1: Search */}
         <div className="relative">
           <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari nama produk, provider, jenis, nominal, atau slug..."
+            placeholder="Cari nama produk, provider, kategori, atau deskripsi..."
             className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-500 transition-all"
           />
           {searchQuery && (
@@ -564,7 +639,7 @@ export default function PulsaTokenTab() {
           )}
         </div>
 
-        {/* Row 2: Status & Type Filters */}
+        {/* Row 2: Filters */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Status filter */}
           <div className="flex items-center gap-1 bg-zinc-900/80 border border-zinc-800 p-1 rounded-xl">
@@ -591,29 +666,29 @@ export default function PulsaTokenTab() {
             ))}
           </div>
 
-          {/* Type filter */}
+          {/* Category filter */}
           <div className="flex flex-wrap gap-1">
             <button
-              onClick={() => setTypeFilter('all')}
+              onClick={() => setCategoryFilter('all')}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                typeFilter === 'all'
+                categoryFilter === 'all'
                   ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
                   : 'text-zinc-400 border-zinc-700/60 hover:text-white bg-zinc-900/60'
               }`}
             >
-              Semua Jenis
+              Semua Kategori
             </button>
-            {PULSA_TYPE_OPTIONS.map((opt) => (
+            {PULSA_CATEGORIES.map((cat) => (
               <button
-                key={opt.value}
-                onClick={() => setTypeFilter(opt.value)}
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                  typeFilter === opt.value
+                  categoryFilter === cat
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
                     : 'text-zinc-400 border-zinc-700/60 hover:text-white bg-zinc-900/60'
                 }`}
               >
-                {opt.label}
+                {cat}
               </button>
             ))}
           </div>
@@ -651,7 +726,7 @@ export default function PulsaTokenTab() {
             <Smartphone className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
             <h3 className="text-sm font-bold text-white mb-1">Belum ada produk Pulsa & Token.</h3>
             <p className="text-xs text-zinc-400 max-w-xs mx-auto mb-4">
-              {searchQuery || statusFilter !== 'all' || typeFilter !== 'all'
+              {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all'
                 ? 'Tidak ada produk yang cocok dengan pencarian atau filter Anda.'
                 : 'Mulai dengan menambahkan produk pulsa, paket data, atau token listrik pertama Anda.'}
             </p>
@@ -666,12 +741,13 @@ export default function PulsaTokenTab() {
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-zinc-300">
                 <thead className="bg-zinc-950/80 text-zinc-400 text-[11px] uppercase tracking-wider border-b border-zinc-800 select-none">
                   <tr>
                     <th className="py-3 px-4">Produk</th>
-                    <th className="py-3 px-3">Jenis & Provider</th>
+                    <th className="py-3 px-3">Kategori</th>
+                    <th className="py-3 px-3">Provider</th>
                     <th
                       className="py-3 px-3 cursor-pointer hover:text-white"
                       onClick={() => toggleSort('nominal')}
@@ -681,31 +757,12 @@ export default function PulsaTokenTab() {
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </th>
-                    <th className="py-3 px-3">Harga Modal</th>
                     <th
                       className="py-3 px-3 cursor-pointer hover:text-white"
-                      onClick={() => toggleSort('selling_price')}
+                      onClick={() => toggleSort('price')}
                     >
                       <div className="flex items-center gap-1">
-                        <span>Harga Jual</span>
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </th>
-                    <th
-                      className="py-3 px-3 cursor-pointer hover:text-white"
-                      onClick={() => toggleSort('margin')}
-                    >
-                      <div className="flex items-center gap-1">
-                        <span>Margin</span>
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </th>
-                    <th
-                      className="py-3 px-3 cursor-pointer hover:text-white"
-                      onClick={() => toggleSort('stock')}
-                    >
-                      <div className="flex items-center gap-1">
-                        <span>Stok</span>
+                        <span>Harga</span>
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </th>
@@ -715,252 +772,202 @@ export default function PulsaTokenTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60 font-medium">
-                  {filtered.map((item) => {
-                    const margin = item.selling_price - item.cost_price;
-                    const marginPercent = item.cost_price > 0 ? Math.round((margin / item.cost_price) * 100) : 0;
-                    const isOutOfStock = item.stock === 0;
-                    const isLowStock = item.stock > 0 && item.stock <= 5;
-
-                    return (
-                      <tr key={item.id} className="hover:bg-zinc-850/40 transition-colors">
-                        {/* Nama Produk */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-white leading-snug">{item.name}</div>
-                          <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{item.slug}</div>
-                        </td>
-
-                        {/* Jenis & Provider */}
-                        <td className="py-3.5 px-3">
-                          <div className="flex flex-col gap-1 items-start">
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/40">
-                              {item.provider}
-                            </span>
-                            <span className="text-[10px] text-zinc-400 capitalize">
-                              {item.type.replace('_', ' ')}
-                            </span>
+                  {filtered.map((item) => (
+                    <tr key={item.id} className="hover:bg-zinc-850/40 transition-colors">
+                      {/* Nama & Thumbnail Gambar */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 shrink-0 flex items-center justify-center">
+                            {item.image_url ? (
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              getCategoryIcon(item.category)
+                            )}
                           </div>
-                        </td>
-
-                        {/* Nominal */}
-                        <td className="py-3.5 px-3 text-zinc-200">
-                          {formatRupiah(item.nominal)}
-                        </td>
-
-                        {/* Harga Modal */}
-                        <td className="py-3.5 px-3 font-mono text-zinc-400">
-                          {formatRupiah(item.cost_price)}
-                        </td>
-
-                        {/* Harga Jual */}
-                        <td className="py-3.5 px-3 font-mono font-bold text-white">
-                          {formatRupiah(item.selling_price)}
-                        </td>
-
-                        {/* Margin */}
-                        <td className="py-3.5 px-3 font-mono">
-                          <div
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold ${
-                              margin >= 0
-                                ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40'
-                                : 'bg-red-950/60 text-red-300 border border-red-800/40'
-                            }`}
-                          >
-                            <span>{formatRupiah(margin)}</span>
-                            <span className="text-[9px] opacity-80">({marginPercent}%)</span>
+                          <div>
+                            <div className="font-bold text-white leading-snug">{item.name}</div>
+                            {item.description && (
+                              <div className="text-[10px] text-zinc-400 line-clamp-1 mt-0.5">
+                                {item.description}
+                              </div>
+                            )}
                           </div>
-                        </td>
+                        </div>
+                      </td>
 
-                        {/* Stok */}
-                        <td className="py-3.5 px-3">
-                          {isOutOfStock ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-950/60 text-red-400 border border-red-800/50">
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>Stok habis</span>
-                            </span>
-                          ) : isLowStock ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/50">
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>Sisa {item.stock} (Stok hampir habis)</span>
-                            </span>
-                          ) : (
-                            <span className="text-zinc-300 text-xs font-mono">{item.stock}</span>
-                          )}
-                        </td>
+                      {/* Kategori */}
+                      <td className="py-3.5 px-3">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-300 bg-zinc-800/60 px-2 py-0.5 rounded-md border border-zinc-700/40">
+                          {getCategoryIcon(item.category)}
+                          <span>{item.category}</span>
+                        </span>
+                      </td>
 
-                        {/* Status Switch */}
-                        <td className="py-3.5 px-3 text-center">
+                      {/* Provider */}
+                      <td className="py-3.5 px-3">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/40">
+                          {item.provider}
+                        </span>
+                      </td>
+
+                      {/* Nominal */}
+                      <td className="py-3.5 px-3 text-zinc-200 font-mono">
+                        {formatRupiah(item.nominal)}
+                      </td>
+
+                      {/* Harga Jual */}
+                      <td className="py-3.5 px-3 font-mono font-bold text-white">
+                        {formatRupiah(item.price)}
+                      </td>
+
+                      {/* Status Switch */}
+                      <td className="py-3.5 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActive(item)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                            item.is_active
+                              ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 hover:bg-emerald-900/60'
+                              : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700'
+                          }`}
+                          title={item.is_active ? 'Klik untuk nonaktifkan' : 'Klik untuk aktifkan'}
+                        >
+                          {item.is_active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          <span>{item.is_active ? 'Aktif' : 'Nonaktif'}</span>
+                        </button>
+                      </td>
+
+                      {/* Featured Toggle */}
+                      <td className="py-3.5 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeatured(item)}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            item.is_featured
+                              ? 'text-amber-400 bg-amber-950/40 hover:bg-amber-900/50'
+                              : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
+                          }`}
+                          title={item.is_featured ? 'Hapus dari unggulan' : 'Jadikan produk unggulan'}
+                        >
+                          <Star className={`w-4 h-4 ${item.is_featured ? 'fill-amber-400' : ''}`} />
+                        </button>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => handleToggleActive(item)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
-                              item.is_active
-                                ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 hover:bg-emerald-900/60'
-                                : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700'
-                            }`}
-                            title={item.is_active ? 'Klik untuk nonaktifkan' : 'Klik untuk aktifkan'}
+                            onClick={() => openEdit(item)}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                            title="Edit produk"
                           >
-                            {item.is_active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                            <span>{item.is_active ? 'Aktif' : 'Nonaktif'}</span>
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
-                        </td>
-
-                        {/* Featured Toggle */}
-                        <td className="py-3.5 px-3 text-center">
                           <button
                             type="button"
-                            onClick={() => handleToggleFeatured(item)}
-                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                              item.is_featured
-                                ? 'text-amber-400 bg-amber-950/40 hover:bg-amber-900/50'
-                                : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
-                            }`}
-                            title={item.is_featured ? 'Hapus dari unggulan' : 'Jadikan produk unggulan'}
+                            onClick={() => setDeleteTarget(item)}
+                            className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/40 transition-colors cursor-pointer"
+                            title="Hapus produk"
                           >
-                            <Star className={`w-4 h-4 ${item.is_featured ? 'fill-amber-400' : ''}`} />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => openEdit(item)}
-                              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
-                              title="Edit produk"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget(item)}
-                              className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/40 transition-colors cursor-pointer"
-                              title="Hapus produk"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Mobile / Tablet Card View */}
-            <div className="lg:hidden divide-y divide-zinc-800/70">
-              {filtered.map((item) => {
-                const margin = item.selling_price - item.cost_price;
-                const isOutOfStock = item.stock === 0;
-                const isLowStock = item.stock > 0 && item.stock <= 5;
-
-                return (
-                  <div key={item.id} className="p-4 space-y-3">
-                    {/* Header: Title & Badges */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/40">
-                            {item.provider}
-                          </span>
-                          <span className="text-[10px] text-zinc-400 capitalize">
-                            {item.type.replace('_', ' ')}
-                          </span>
-                          {item.is_featured && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                              <Star className="w-2.5 h-2.5 fill-amber-400" />
-                              Unggulan
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-sm font-bold text-white">{item.name}</h4>
-                        <span className="text-[10px] text-zinc-500 font-mono">{item.slug}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(item)}
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-white bg-zinc-800/80"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(item)}
-                          className="p-1.5 rounded-lg text-red-400 hover:text-red-300 bg-red-950/30"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+            {/* Mobile Cards View */}
+            <div className="md:hidden divide-y divide-zinc-800/70">
+              {filtered.map((item) => (
+                <div key={item.id} className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 shrink-0 flex items-center justify-center">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        getCategoryIcon(item.category)
+                      )}
                     </div>
-
-                    {/* Pricing & Margin info */}
-                    <div className="grid grid-cols-3 gap-2 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/60 text-center">
-                      <div>
-                        <div className="text-[10px] text-zinc-500">Harga Modal</div>
-                        <div className="text-xs font-mono text-zinc-300 font-semibold mt-0.5">
-                          {formatRupiah(item.cost_price)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-zinc-500">Harga Jual</div>
-                        <div className="text-xs font-mono text-white font-bold mt-0.5">
-                          {formatRupiah(item.selling_price)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-zinc-500">Keuntungan</div>
-                        <div
-                          className={`text-xs font-mono font-bold mt-0.5 ${
-                            margin >= 0 ? 'text-emerald-400' : 'text-red-400'
-                          }`}
-                        >
-                          {formatRupiah(margin)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stock and Status row */}
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <div>
-                        {isOutOfStock ? (
-                          <span className="text-red-400 font-bold text-xs flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            <span>Stok habis</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/40">
+                          {item.provider}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">
+                          {item.category}
+                        </span>
+                        {item.is_featured && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <Star className="w-2.5 h-2.5 fill-amber-400" />
+                            Unggulan
                           </span>
-                        ) : isLowStock ? (
-                          <span className="text-amber-400 font-bold text-xs flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            <span>Stok hampir habis ({item.stock})</span>
-                          </span>
-                        ) : (
-                          <span className="text-zinc-400 text-xs">Stok: {item.stock}</span>
                         )}
                       </div>
-
+                      <h4 className="text-sm font-bold text-white truncate">{item.name}</h4>
+                      <div className="text-xs font-mono font-bold text-cyan-400 mt-0.5">
+                        {formatRupiah(item.price)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
-                        onClick={() => handleToggleActive(item)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                          item.is_active
-                            ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
-                            : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                        }`}
+                        onClick={() => openEdit(item)}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-white bg-zinc-800/80"
                       >
-                        {item.is_active ? 'Aktif' : 'Nonaktif'}
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(item)}
+                        className="p-1.5 rounded-lg text-red-400 hover:text-red-300 bg-red-950/30"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
-                );
-              })}
+
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-800/50">
+                    <span className="text-zinc-500 text-[11px]">
+                      Nominal: {formatRupiah(item.nominal)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleActive(item)}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        item.is_active
+                          ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
+                          : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                      }`}
+                    >
+                      {item.is_active ? 'Aktif' : 'Nonaktif'}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         )}
       </div>
 
-      {/* ── Add / Edit Modal ── */}
+      {/* ── Modal Tambah / Edit ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div
@@ -985,7 +992,7 @@ export default function PulsaTokenTab() {
               </button>
             </div>
 
-            {/* Error Message */}
+            {/* Error Banner */}
             {formError && (
               <div className="p-3 rounded-xl bg-red-950/50 border border-red-800/60 text-xs text-red-300">
                 {formError}
@@ -1004,7 +1011,7 @@ export default function PulsaTokenTab() {
                   required
                   value={formName}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Contoh: Telkomsel Pulsa 10.000 / Token PLN 50.000"
+                  placeholder="Contoh: Telkomsel 10K / Token PLN 50K"
                   className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                 />
               </div>
@@ -1019,25 +1026,25 @@ export default function PulsaTokenTab() {
                   required
                   value={formSlug}
                   onChange={(e) => handleSlugChange(e.target.value)}
-                  placeholder="telkomsel-pulsa-10000"
+                  placeholder="telkomsel-10k"
                   className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-mono focus:outline-none focus:border-cyan-500"
                 />
               </div>
 
-              {/* Jenis (Type) & Provider */}
+              {/* Kategori & Provider */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Jenis Produk <span className="text-red-400">*</span>
+                    Kategori <span className="text-red-400">*</span>
                   </label>
                   <select
-                    value={formType}
-                    onChange={(e) => setFormType(e.target.value as PulsaTokenType)}
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                   >
-                    {PULSA_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                    {PULSA_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
                       </option>
                     ))}
                   </select>
@@ -1062,7 +1069,7 @@ export default function PulsaTokenTab() {
                 </div>
               </div>
 
-              {/* Custom Provider input if "Lainnya" */}
+              {/* Input Custom Provider */}
               {formProvider === 'Lainnya' && (
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
@@ -1079,97 +1086,105 @@ export default function PulsaTokenTab() {
                 </div>
               )}
 
-              {/* Nominal */}
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Nominal Pulsa / Token / Saldo <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  value={formNominal}
-                  onChange={(e) => setFormNominal(e.target.value)}
-                  placeholder="Contoh: 10000 / 50000"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-
-              {/* Harga Modal & Harga Jual */}
+              {/* Nominal & Harga */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Harga Modal (Cost Price) <span className="text-red-400">*</span>
+                    Nominal <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
                     min="0"
                     required
-                    value={formCostPrice}
-                    onChange={(e) => setFormCostPrice(e.target.value)}
-                    placeholder="10500"
+                    value={formNominal}
+                    onChange={(e) => setFormNominal(e.target.value)}
+                    placeholder="10000"
                     className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Harga Jual (Selling Price) <span className="text-red-400">*</span>
+                    Harga Jual (Rp) <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
                     min="0"
                     required
-                    value={formSellingPrice}
-                    onChange={(e) => setFormSellingPrice(e.target.value)}
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
                     placeholder="12000"
                     className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                   />
                 </div>
               </div>
 
-              {/* Live Margin Calculation Preview */}
-              <div className="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800/80 flex items-center justify-between text-xs">
-                <span className="text-zinc-400 font-medium">Estimasi Keuntungan / Margin:</span>
-                <span
-                  className={`font-mono font-bold text-sm ${
-                    currentMargin >= 0 ? 'text-emerald-400' : 'text-red-400'
-                  }`}
-                >
-                  {formatRupiah(currentMargin)}
-                  {currentMargin < 0 && ' (Rugi)'}
-                </span>
-              </div>
-
-              {/* Stok */}
+              {/* Gambar (Opsional) */}
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Stok Produk <span className="text-red-400">*</span>
+                  Gambar Produk (Opsional)
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  value={formStock}
-                  onChange={(e) => setFormStock(e.target.value)}
-                  placeholder="999"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-cyan-500"
-                />
-                <span className="text-[10px] text-zinc-500 mt-1 block">
-                  Stok bersifat informasi dan kontrol admin (tidak otomatis berkurang saat klik WA).
-                </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
+                    {formImageUrl ? (
+                      <img
+                        src={formImageUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-zinc-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleOpenPicker}
+                        disabled={uploadingImage}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 cursor-pointer disabled:opacity-50"
+                      >
+                        {uploadingImage ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5" />
+                        )}
+                        <span>{uploadingImage ? 'Mengunggah...' : 'Pilih Gambar'}</span>
+                      </button>
+                      {formImageUrl && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="px-2 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 bg-red-950/30"
+                        >
+                          Hapus
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={formImageUrl}
+                      onChange={(e) => setFormImageUrl(e.target.value)}
+                      placeholder="Atau masukkan URL gambar langsung..."
+                      className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Deskripsi */}
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Deskripsi / Catatan Tambahan (Opsional)
+                  Deskripsi Produk (Opsional)
                 </label>
                 <textarea
                   rows={2}
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Contoh: Masa aktif 30 hari, kuota 24 jam full, dll."
+                  placeholder="Contoh: Pulsa Telkomsel nominal 10 ribu."
                   className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                 />
               </div>
@@ -1197,7 +1212,7 @@ export default function PulsaTokenTab() {
                 </label>
               </div>
 
-              {/* Submit Buttons */}
+              {/* Submit Button */}
               <div className="pt-4 border-t border-zinc-800 flex items-center justify-end gap-2">
                 <button
                   type="button"

@@ -34,8 +34,6 @@ export default function DashboardTab() {
     outOfStockFoodDrinks: initialFoodDrinks.filter((f) => f.status && f.stock === 0).length,
     totalPulsaTokens: initialPulsaTokens.length,
     activePulsaTokens: initialPulsaTokens.filter((p) => p.is_active).length,
-    outOfStockPulsaTokens: initialPulsaTokens.filter((p) => p.is_active && p.stock === 0).length,
-    lowStockPulsaTokens: initialPulsaTokens.filter((p) => p.is_active && p.stock > 0 && p.stock <= 5).length,
   });
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +50,7 @@ export default function DashboardTab() {
           supabase.from('services').select('id', { count: 'exact' }),
           supabase.from('cinema_promos').select('id', { count: 'exact' }),
           supabase.from('food_drinks').select('id, status, stock'),
-          supabase.from('pulsa_tokens').select('id, is_active, stock'),
+          supabase.from('pulsa_tokens').select('id, is_active'),
         ]);
 
         const products = prodRes.data || [];
@@ -69,8 +67,6 @@ export default function DashboardTab() {
           outOfStockFoodDrinks: foodDrinks.filter((f) => f.status && f.stock === 0).length,
           totalPulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.length : initialPulsaTokens.length,
           activePulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.filter((p) => p.is_active).length : initialPulsaTokens.filter((p) => p.is_active).length,
-          outOfStockPulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.filter((p) => p.is_active && p.stock === 0).length : initialPulsaTokens.filter((p) => p.is_active && p.stock === 0).length,
-          lowStockPulsaTokens: pulsaTokens.length > 0 ? pulsaTokens.filter((p) => p.is_active && p.stock > 0 && p.stock <= 5).length : initialPulsaTokens.filter((p) => p.is_active && p.stock > 0 && p.stock <= 5).length,
         });
       } catch (err) {
         console.error('Error fetching stats:', err);
@@ -212,14 +208,14 @@ export default function DashboardTab() {
             { label: 'Total Produk', value: loading ? null : stats.totalPulsaTokens, color: 'text-white' },
             { label: 'Produk Aktif', value: loading ? null : stats.activePulsaTokens, color: 'text-emerald-400' },
             {
-              label: 'Stok Habis',
-              value: loading ? null : stats.outOfStockPulsaTokens,
-              color: (stats.outOfStockPulsaTokens || 0) > 0 ? 'text-red-400' : 'text-zinc-500',
+              label: 'Nonaktif',
+              value: loading ? null : (stats.totalPulsaTokens || 0) - (stats.activePulsaTokens || 0),
+              color: 'text-zinc-400',
             },
             {
-              label: 'Hampir Habis (≤ 5)',
-              value: loading ? null : stats.lowStockPulsaTokens,
-              color: (stats.lowStockPulsaTokens || 0) > 0 ? 'text-amber-400' : 'text-zinc-500',
+              label: 'Total Kategori',
+              value: loading ? null : 5,
+              color: 'text-cyan-400',
             },
           ].map((s) => (
             <div key={s.label} className="p-4 text-center">
@@ -230,14 +226,6 @@ export default function DashboardTab() {
             </div>
           ))}
         </div>
-        {!loading && ((stats.outOfStockPulsaTokens || 0) > 0 || (stats.lowStockPulsaTokens || 0) > 0) && (
-          <div className="px-5 py-2.5 bg-amber-950/20 border-t border-amber-800/30 flex items-center gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-xs text-amber-300">
-              Ada produk pulsa/token dengan stok habis atau hampir habis — perbarui dari tab Pulsa & Token.
-            </span>
-          </div>
-        )}
       </div>
 
       {/* ── Quick Actions ── */}

@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from './client';
 
-export type StorageBucket = 'product-images' | 'service-images' | 'cinema-images' | 'drink-images' | 'food-drink-images' | 'store-assets';
+export type StorageBucket = 'product-images' | 'service-images' | 'cinema-images' | 'drink-images' | 'food-drink-images' | 'pulsa-token-images' | 'store-assets';
 
 /**
  * Upload an image file to Supabase Storage and return its public URL
@@ -25,8 +25,8 @@ export async function uploadImage(
     const randomSuffix = Math.random().toString(36).substring(2, 9);
     const fileName = `${Date.now()}-${randomSuffix}.${cleanExt}`;
 
-    // 3. Tentukan folder path rapi (default: food-drinks/ untuk bucket food-drink-images)
-    const targetFolder = folder ?? (bucket === 'food-drink-images' ? 'food-drinks' : '');
+    // 3. Tentukan folder path rapi (default: food-drinks/ untuk food-drink-images, pulsa-token/ untuk pulsa-token-images)
+    const targetFolder = folder ?? (bucket === 'food-drink-images' ? 'food-drinks' : bucket === 'pulsa-token-images' ? 'pulsa-token' : '');
     const filePath = targetFolder ? `${targetFolder}/${fileName}` : fileName;
 
     // 4. Upload ke Supabase Storage dengan contentType eksplisit

@@ -1,94 +1,85 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { PulsaTokenPublic } from '@/types/database';
+import { PulsaToken } from '@/types/database';
 import { initialPulsaTokens } from '@/data/pulsa-tokens';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useAdminPortal } from '@/context/AdminPortalContext';
 import PulsaTokenCard from './PulsaTokenCard';
 import { Smartphone, Zap, Loader2, Star, Wifi, Gamepad2, CreditCard } from 'lucide-react';
 
-const TYPE_FILTER_TABS = [
-  { id: 'all', label: 'Semua', icon: null },
-  { id: 'pulsa', label: 'Pulsa', icon: Smartphone },
-  { id: 'data', label: 'Paket Data', icon: Wifi },
-  { id: 'token_pln', label: 'Token PLN', icon: Zap },
-  { id: 'voucher_game', label: 'Voucher Game', icon: Gamepad2 },
-  { id: 'ewallet', label: 'E-Wallet', icon: CreditCard },
+const CATEGORY_TABS = [
+  { id: 'Semua', label: 'Semua', icon: null },
+  { id: 'Pulsa', label: 'Pulsa', icon: Smartphone },
+  { id: 'Paket Data', label: 'Paket Data', icon: Wifi },
+  { id: 'Token PLN', label: 'Token PLN', icon: Zap },
+  { id: 'Voucher Game', label: 'Voucher Game', icon: Gamepad2 },
+  { id: 'E-Wallet', label: 'E-Wallet', icon: CreditCard },
 ];
 
 export default function PulsaTokenSection() {
   const { dataVersion } = useAdminPortal();
-
-  // Strip cost_price from initial seed data for public representation
-  const initialPublicItems: PulsaTokenPublic[] = useMemo(() => {
-    return initialPulsaTokens
-      .filter((d) => d.is_active)
-      .map(({ cost_price, ...rest }) => rest);
-  }, []);
-
-  const [items, setItems] = useState<PulsaTokenPublic[]>(initialPublicItems);
+  const [items, setItems] = useState<PulsaToken[]>(initialPulsaTokens.filter((d) => d.is_active));
   const [loading, setLoading] = useState(false);
-  const [activeType, setActiveType] = useState<string>('all');
+  const [activeCategory, setActiveCategory] = useState<string>('Semua');
   const [activeProvider, setActiveProvider] = useState<string>('all');
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
   useEffect(() => {
     async function fetchPulsaTokens() {
       if (!isSupabaseConfigured()) {
-        setItems(initialPublicItems);
+        setItems(initialPulsaTokens.filter((d) => d.is_active));
         return;
       }
 
       setLoading(true);
 
       try {
-        // PERHATIAN KEAMANAN: Hanya select kolom publik, jangan pernah request 'cost_price'
         const { data, error } = await supabase
           .from('pulsa_tokens')
-          .select('id, name, slug, type, provider, nominal, selling_price, description, stock, is_active, is_featured, created_at')
+          .select('*')
           .eq('is_active', true)
           .order('is_featured', { ascending: false })
           .order('created_at', { ascending: false });
 
         if (error) {
           console.warn('[PulsaTokenSection] Memakai data cadangan:', error.message);
-          setItems(initialPublicItems);
+          setItems(initialPulsaTokens.filter((d) => d.is_active));
         } else if (data && data.length > 0) {
-          setItems(data as PulsaTokenPublic[]);
+          setItems(data as PulsaToken[]);
         } else {
-          setItems(initialPublicItems);
+          setItems(initialPulsaTokens.filter((d) => d.is_active));
         }
       } catch (err) {
         console.error('[PulsaTokenSection] Error fetch:', err);
-        setItems(initialPublicItems);
+        setItems(initialPulsaTokens.filter((d) => d.is_active));
       } finally {
         setLoading(false);
       }
     }
 
     fetchPulsaTokens();
-  }, [dataVersion, initialPublicItems]);
+  }, [dataVersion]);
 
-  // Provider yang relevan dengan tipe yang sedang aktif
+  // Provider yang tersedia berdasarkan kategori yang dipilih
   const availableProviders = useMemo(() => {
-    const list = activeType === 'all' ? items : items.filter((d) => d.type === activeType);
+    const list = activeCategory === 'Semua' ? items : items.filter((d) => d.category === activeCategory);
     const providers = Array.from(new Set(list.map((d) => d.provider))).filter(Boolean);
-    return providers;
-  }, [items, activeType]);
+    return providers.sort();
+  }, [items, activeCategory]);
 
-  // Reset provider filter bila tipe produk diganti dan provider sebelumnya tidak ada di tipe baru
+  // Reset filter provider jika tidak relevan dengan kategori aktif
   useEffect(() => {
     if (activeProvider !== 'all' && !availableProviders.includes(activeProvider)) {
       setActiveProvider('all');
     }
-  }, [activeType, availableProviders, activeProvider]);
+  }, [activeCategory, availableProviders, activeProvider]);
 
   // Filtered items
   const filtered = useMemo(() => {
     let list = items;
-    if (activeType !== 'all') {
-      list = list.filter((d) => d.type === activeType);
+    if (activeCategory !== 'Semua') {
+      list = list.filter((d) => d.category === activeCategory);
     }
     if (activeProvider !== 'all') {
       list = list.filter((d) => d.provider === activeProvider);
@@ -97,13 +88,13 @@ export default function PulsaTokenSection() {
       list = list.filter((d) => d.is_featured);
     }
     return list;
-  }, [items, activeType, activeProvider, showFeaturedOnly]);
+  }, [items, activeCategory, activeProvider, showFeaturedOnly]);
 
   const featuredCount = items.filter((d) => d.is_featured).length;
 
   return (
     <section id="pulsa-token" className="py-16 bg-zinc-950/80 relative border-t border-zinc-800/40">
-      {/* Background ambient light */}
+      {/* Ambient background light */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/3 left-0 w-80 h-80 bg-cyan-600/5 rounded-full blur-3xl" />
         <div className="absolute bottom-10 right-0 w-72 h-72 bg-indigo-600/5 rounded-full blur-3xl" />
@@ -121,7 +112,7 @@ export default function PulsaTokenSection() {
               <span>📱 PULSA & TOKEN</span>
             </h2>
             <p className="text-zinc-400 text-xs sm:text-sm mt-1">
-              Beli pulsa, kuota data, token listrik PLN, voucher game, dan saldo e-wallet langsung proses via WhatsApp.
+              Pilih produk pulsa, paket data, token PLN, voucher game, atau e-wallet favorit Anda, pesan praktis langsung via WhatsApp.
             </p>
           </div>
 
@@ -131,16 +122,16 @@ export default function PulsaTokenSection() {
           </div>
         </div>
 
-        {/* ── Type Filter Pills ── */}
+        {/* ── Category Filter Pills ── */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {TYPE_FILTER_TABS.map((tab) => {
+          {CATEGORY_TABS.map((tab) => {
             const Icon = tab.icon;
-            const isActive = activeType === tab.id;
+            const isActive = activeCategory === tab.id;
             return (
               <button
                 key={tab.id}
-                id={`filter-pulsa-type-${tab.id}`}
-                onClick={() => setActiveType(tab.id)}
+                id={`filter-pulsa-${tab.id.toLowerCase().replace(/\s+/g, '-')}`}
+                onClick={() => setActiveCategory(tab.id)}
                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
                   isActive
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm'
@@ -169,7 +160,7 @@ export default function PulsaTokenSection() {
           )}
         </div>
 
-        {/* ── Provider Filter Pills (Jika tersedia > 1 provider) ── */}
+        {/* ── Provider Filter Pills ── */}
         {availableProviders.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5 mb-8 pb-3 border-b border-zinc-800/40">
             <span className="text-[11px] text-zinc-500 font-medium mr-1">Provider:</span>
